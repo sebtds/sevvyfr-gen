@@ -1,8 +1,9 @@
+import os
 import time
 import discord
 from discord import app_commands
 
-TOKEN = ""
+TOKEN = os.getenv("TOKEN")
 GUILD_ID = 12345678901   # your server ID
 OWNER_ID = "sevvyfr."   # your Discord user ID
 STOCK_FILE = "stock.txt"
