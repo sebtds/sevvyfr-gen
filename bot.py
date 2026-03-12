@@ -724,44 +724,5 @@ async def blacklist(interaction: discord.Interaction, user: discord.Member):
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
-    @client.tree.command(
-    name="unblacklist",
-    description="Remove a user from the blacklist",
-    guild=discord.Object(id=GUILD_ID)
-)
-@app_commands.describe(user="User to remove from blacklist")
-async def unblacklist(interaction: discord.Interaction, user: discord.Member):
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=discord.Color.red()
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    if user.id not in blacklisted_users:
-        embed = discord.Embed(
-            title="Not Blacklisted",
-            description=f"{user.mention} is not blacklisted.",
-            color=discord.Color.red()
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    blacklisted_users.remove(user.id)
-
-    embed = discord.Embed(
-        title="User Unblacklisted",
-        description=f"{user.mention} has been removed from the blacklist.",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
-    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 client.run(TOKEN)
