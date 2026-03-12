@@ -286,6 +286,7 @@ async def stock(interaction: discord.Interaction):
             description="You are not allowed to use this command.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
@@ -299,6 +300,7 @@ async def stock(interaction: discord.Interaction):
         description="Current stock amounts are below.",
         color=discord.Color.red()
     )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.add_field(name="Free Stock", value=str(free_amount), inline=False)
     embed.add_field(name="Premium Stock", value=str(premium_amount), inline=False)
     embed.set_footer(text="Powered by @sevvyfr")
@@ -326,6 +328,7 @@ async def stockview(
             description="You are not allowed to use this command.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
@@ -343,6 +346,7 @@ async def stockview(
             description="Stock is empty.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
@@ -355,6 +359,7 @@ async def stockview(
             description=f"```{text}```",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
     else:
@@ -363,6 +368,7 @@ async def stockview(
             description=f"Stock too long to show.\nTotal items: **{len(stock_items)}**",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -387,7 +393,7 @@ async def geninfo(interaction: discord.Interaction):
         description="Your generator info.",
         color=discord.Color.red()
     )
-
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.add_field(name="Free Stock Left", value=str(free_stock_amount), inline=False)
     embed.add_field(name="Premium Stock Left", value=str(premium_stock_amount), inline=False)
     embed.add_field(name="Free Cooldown", value=free_cooldown_text, inline=False)
@@ -417,6 +423,7 @@ async def clearstock(
             description="You are not allowed to use this command.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
@@ -435,7 +442,7 @@ async def clearstock(
             description="Premium stock has been cleared.",
             color=discord.Color.red()
         )
-
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -506,6 +513,7 @@ async def restockfile(
             description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
@@ -520,6 +528,7 @@ async def restockfile(
             description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
@@ -550,6 +559,7 @@ async def setcooldown(
             description="You are not allowed to use this command.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
@@ -573,6 +583,7 @@ async def setcooldown(
         description=message,
         color=discord.Color.red()
     )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
