@@ -15,6 +15,7 @@ PREMIUM_STOCK_FILE = "premium_stock.txt"
 STOCK_FILE = "stock.txt"
 FREE_COOLDOWN_SECONDS = 300
 PREMIUM_COOLDOWN_SECONDS = 120
+EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
 
 cooldowns = {}
 
@@ -188,19 +189,29 @@ async def restock(
     items: str
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        await interaction.response.send_message(
-            "You are not allowed to use this command.",
-            ephemeral=False
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     new_items = [line.strip() for line in items.splitlines() if line.strip()]
 
     if not new_items:
-        await interaction.response.send_message(
-            "No valid strings were provided.",
-            ephemeral=False
+        embed = discord.Embed(
+            title="Restock Failed",
+            description="No valid strings were provided.",
+            color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if stock_type.value == "free":
@@ -208,21 +219,34 @@ async def restock(
         current_stock.extend(new_items)
         save_stock(current_stock)
 
-        await interaction.response.send_message(
-            f"Added {len(new_items)} item(s) to FREE stock. Total free stock: {len(current_stock)}",
-            ephemeral=False
+        embed = discord.Embed(
+            title="Free Stock Restocked",
+            description=f"Added **{len(new_items)}** item(s) to FREE stock.",
+            color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.add_field(name="Added", value=str(len(new_items)), inline=False)
+        embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     elif stock_type.value == "premium":
         current_stock = get_premium_stock()
         current_stock.extend(new_items)
         save_premium_stock(current_stock)
 
-        await interaction.response.send_message(
-            f"Added {len(new_items)} item(s) to PREMIUM stock. Total premium stock: {len(current_stock)}",
-            ephemeral=False
+        embed = discord.Embed(
+            title="Premium Stock Restocked",
+            description=f"Added **{len(new_items)}** item(s) to PREMIUM stock.",
+            color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.add_field(name="Added", value=str(len(new_items)), inline=False)
+        embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
+        embed.set_footer(text="Powered by @sevvyfr")
 
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
     name="stock",
