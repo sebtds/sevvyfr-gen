@@ -292,7 +292,7 @@ async def stockview(
 
     if not stock_items:
         embed = discord.Embed(
-            title=f"{stock_name}",
+            title="stock name",
             description="Stock is empty.",
             color=discord.Color.red()
         )
@@ -324,11 +324,6 @@ async def stockview(
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
-@client.tree.command(
-    name="geninfo",
-    description="View stock and cooldown info",
-    guild=discord.Object(id=GUILD_ID)
-)
 @client.tree.command(
     name="geninfo",
     description="View stock and cooldown info",
