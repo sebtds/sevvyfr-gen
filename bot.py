@@ -790,52 +790,7 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
-@client.tree.command(
-    name="viewblacklist",
-    description="View all blacklisted user IDs",
-    guild=discord.Object(id=GUILD_ID)
-)
-async def viewblacklist(interaction: discord.Interaction):
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=discord.Color.red()
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
 
-    if not blacklisted_users:
-        embed = discord.Embed(
-            title="Blacklist",
-            description="No users are blacklisted.",
-            color=discord.Color.red()
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    text = "\n".join(str(user_id) for user_id in blacklisted_users)
-
-    if len(text) > 1900:
-        embed = discord.Embed(
-            title="Blacklist",
-            description=f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
-            color=discord.Color.red()
-        )
-    else:
-        embed = discord.Embed(
-            title="Blacklist",
-            description=f"```{text}```",
-            color=discord.Color.red()
-        )
-
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
-    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
     name="viewblacklist",
