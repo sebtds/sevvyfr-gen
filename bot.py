@@ -4,7 +4,7 @@ import time
 import discord
 from discord import app_commands
 
-TOKEN = ""
+TOKEN = os.getenv("TOKEN")
 
 GUILD_ID = 1478979867088523425
 OWNER_ID = 742144460552536106
