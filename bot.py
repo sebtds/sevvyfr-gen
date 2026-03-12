@@ -658,6 +658,11 @@ async def help_command(interaction: discord.Interaction):
             "`/setstatus` - Change bot status text\n"
             "`/blacklist` - Blacklist a user\n"
             "`/unblacklist` - Remove a user from blacklist"
+            "`/viewblacklist` - View blacklisted users\n"
+            "`/clearblacklist` - Clear the blacklist\n"
+            "`/removestock` - Remove items from stock\n"
+            "`/resetcooldown` - Reset one user's cooldown\n"
+            "`/clearcooldowns` - Clear all cooldowns\n"
         ),
         inline=False
     )
@@ -667,7 +672,7 @@ async def help_command(interaction: discord.Interaction):
         value="`/help` - Show this message",
         inline=False
     )
-
+     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -784,5 +789,255 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="viewblacklist",
+    description="View all blacklisted user IDs",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def viewblacklist(interaction: discord.Interaction):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if not blacklisted_users:
+        embed = discord.Embed(
+            title="Blacklist",
+            description="No users are blacklisted.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    text = "\n".join(str(user_id) for user_id in blacklisted_users)
+
+    if len(text) > 1900:
+        embed = discord.Embed(
+            title="Blacklist",
+            description=f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
+            color=discord.Color.red()
+        )
+    else:
+        embed = discord.Embed(
+            title="Blacklist",
+            description=f"```{text}```",
+            color=discord.Color.red()
+        )
+
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="viewblacklist",
+    description="View all blacklisted user IDs",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def viewblacklist(interaction: discord.Interaction):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if not blacklisted_users:
+        embed = discord.Embed(
+            title="Blacklist",
+            description="No users are blacklisted.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    text = "\n".join(str(user_id) for user_id in blacklisted_users)
+
+    if len(text) > 1900:
+        embed = discord.Embed(
+            title="Blacklist",
+            description=f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
+            color=discord.Color.red()
+        )
+    else:
+        embed = discord.Embed(
+            title="Blacklist",
+            description=f"```{text}```",
+            color=discord.Color.red()
+        )
+
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="clearblacklist",
+    description="Clear the entire blacklist",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def clearblacklist(interaction: discord.Interaction):
+    global blacklisted_users
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    cleared_count = len(blacklisted_users)
+    blacklisted_users.clear()
+    save_blacklist(blacklisted_users)
+
+    embed = discord.Embed(
+        title="Blacklist Cleared",
+        description=f"Cleared **{cleared_count}** blacklisted user(s).",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="removestock",
+    description="Remove items from free or premium stock",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(
+    stock_type="Choose which stock to remove from",
+    amount="How many items to remove"
+)
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def removestock(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str],
+    amount: int
+):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if amount <= 0:
+        embed = discord.Embed(
+            title="Invalid Amount",
+            description="Amount must be greater than 0.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if stock_type.value == "free":
+        stock = get_stock()
+
+        if not stock:
+            embed = discord.Embed(
+                title="Free Stock",
+                description="Free stock is already empty.",
+                color=discord.Color.red()
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text="Powered by @sevvyfr")
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+        removed_amount = min(amount, len(stock))
+        stock = stock[removed_amount:]
+        save_stock(stock)
+
+        embed = discord.Embed(
+            title="Free Stock Updated",
+            description=f"Removed **{removed_amount}** item(s) from free stock.",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Free Stock Left", value=str(len(stock)), inline=False)
+
+    else:
+        stock = get_premium_stock()
+
+        if not stock:
+            embed = discord.Embed(
+                title="Premium Stock",
+                description="Premium stock is already empty.",
+                color=discord.Color.red()
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text="Powered by @sevvyfr")
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+        removed_amount = min(amount, len(stock))
+        stock = stock[removed_amount:]
+        save_premium_stock(stock)
+
+        embed = discord.Embed(
+            title="Premium Stock Updated",
+            description=f"Removed **{removed_amount}** item(s) from premium stock.",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Premium Stock Left", value=str(len(stock)), inline=False)
+
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="clearcooldowns",
+    description="Clear all active cooldowns",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def clearcooldowns(interaction: discord.Interaction):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    cleared_count = len(cooldowns)
+    cooldowns.clear()
+
+    embed = discord.Embed(
+        title="Cooldowns Cleared",
+        description=f"Cleared **{cleared_count}** active cooldown(s).",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+    
 
 client.run(TOKEN)
