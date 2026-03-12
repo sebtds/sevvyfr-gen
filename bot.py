@@ -271,7 +271,6 @@ async def stockview(
     interaction: discord.Interaction,
     stock_type: app_commands.Choice[str]
 ):
-
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
         embed = discord.Embed(
             title="Access Denied",
@@ -279,7 +278,6 @@ async def stockview(
             color=discord.Color.red()
         )
         embed.set_footer(text="Powered by @sevvyfr")
-
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -292,26 +290,24 @@ async def stockview(
 
     if not stock_items:
         embed = discord.Embed(
-            title="stock name",
+            title=stock_name,
             description="Stock is empty.",
             color=discord.Color.red()
         )
         embed.set_footer(text="Powered by @sevvyfr")
-
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     text = "\n".join(stock_items)
 
- if len(text) <= 1900:
-    embed = discord.Embed(
-        title=stock_name,
-        description=f"```{text}```",
-        color=discord.Color.red()
-    )
-    embed.set_footer(text="Powered by @sevvyfr")
-
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    if len(text) <= 1900:
+        embed = discord.Embed(
+            title=stock_name,
+            description=f"```{text}```",
+            color=discord.Color.red()
+        )
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
     else:
         embed = discord.Embed(
             title=stock_name,
@@ -319,7 +315,6 @@ async def stockview(
             color=discord.Color.red()
         )
         embed.set_footer(text="Powered by @sevvyfr")
-
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
