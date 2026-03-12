@@ -12,14 +12,14 @@ ADMIN_ROLE_ID = 1478983511380725850
 PREMIUM_ROLE_ID = 1481062565810536631  # replace later
 PREMIUM_STOCK_FILE = "premium_stock.txt"
 
+BLACKLIST_FILE = "blacklist.txt"
 STOCK_FILE = "stock.txt"
 FREE_COOLDOWN_SECONDS = 300
 PREMIUM_COOLDOWN_SECONDS = 120
 EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
 
 cooldowns = {}
-blacklisted_users = set()
-
+blacklisted_users = get_blacklist()
 class MyClient(discord.Client):
     def __init__(self):
         intents = discord.Intents.default()
@@ -93,6 +93,22 @@ def save_premium_stock(lines):
 
 def has_premium(member: discord.Member) -> bool:
     return any(role.id == PREMIUM_ROLE_ID for role in member.roles)
+
+def get_blacklist():
+    try:
+        with open(BLACKLIST_FILE, "r", encoding="utf-8") as f:
+            user_ids = set()
+            for line in f.readlines():
+                line = line.strip()
+                if line and line.isdigit():
+                    user_ids.add(int(line))
+            return user_ids
+    except FileNotFoundError:
+        return set()
+
+def save_blacklist(user_ids):
+    with open(BLACKLIST_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(str(user_id) for user_id in user_ids))
 
 @client.tree.command(
     name="gen",
@@ -715,6 +731,7 @@ async def blacklist(interaction: discord.Interaction, user: discord.Member):
         return
 
     blacklisted_users.add(user.id)
+    save_blacklist(blacklisted_users)
 
     embed = discord.Embed(
         title="User Blacklisted",
@@ -755,6 +772,7 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
         return
 
     blacklisted_users.remove(user.id)
+    save_blacklist(blacklisted_users)
 
     embed = discord.Embed(
         title="User Unblacklisted",
