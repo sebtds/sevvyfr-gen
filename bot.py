@@ -672,7 +672,7 @@ async def help_command(interaction: discord.Interaction):
         value="`/help` - Show this message",
         inline=False
     )
-     embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
