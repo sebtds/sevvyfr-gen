@@ -1,13 +1,19 @@
+
 import os
 import time
 import discord
 from discord import app_commands
 
-TOKEN = os.getenv("TOKEN")
-GUILD_ID = 12345678901   # your server ID
-OWNER_ID = "sevvyfr."   # your Discord user ID
+TOKEN = ""
+
+GUILD_ID = 1478979867088523425
+OWNER_ID = 742144460552536106
+ADMIN_ROLE_ID = 1478983511380725850
+PREMIUM_ROLE_ID = 1481062565810536631  # replace later
+PREMIUM_STOCK_FILE = "premium_stock.txt"
+
 STOCK_FILE = "stock.txt"
-COOLDOWN_SECONDS = 300  # 5 minutes
+COOLDOWN_SECONDS = 300
 
 cooldowns = {}
 
@@ -15,6 +21,7 @@ cooldowns = {}
 class MyClient(discord.Client):
     def __init__(self):
         intents = discord.Intents.default()
+        intents.members = True
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
 
@@ -45,21 +52,55 @@ def format_time(seconds):
     return f"{minutes}m {secs}s"
 
 
-def is_owner(user_id: int) -> bool:
-    return user_id == OWNER_ID
+def has_permission(member: discord.Member) -> bool:
+    if member.id == OWNER_ID:
+        return True
+    return any(role.id == ADMIN_ROLE_ID for role in member.roles)
+
+
+def get_cooldown_remaining(user_id: int) -> int:
+    if user_id not in cooldowns:
+        return 0
+
+    remaining = int(COOLDOWN_SECONDS - (time.time() - cooldowns[user_id]))
+    return max(0, remaining)
 
 
 @client.event
 async def on_ready():
+    await client.change_presence(
+        status=discord.Status.dnd,
+        activity=discord.Game(name="discord.gg/sevvyfr")
+    )
     print(f"Logged in as {client.user}")
 
+def get_premium_stock():
+    try:
+        with open(PREMIUM_STOCK_FILE, "r", encoding="utf-8") as f:
+            return [line.strip() for line in f.readlines() if line.strip()]
+    except FileNotFoundError:
+        return []
+
+
+def save_premium_stock(lines):
+    with open(PREMIUM_STOCK_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+def has_premium(member: discord.Member) -> bool:
+    return any(role.id == PREMIUM_ROLE_ID for role in member.roles)
 
 @client.tree.command(
     name="gen",
-    description="Get one item from stock",
+    description="Generate an account",
     guild=discord.Object(id=GUILD_ID)
 )
-async def gen(interaction: discord.Interaction):
+@app_commands.describe(type="Choose stock type")
+@app_commands.choices(type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
+
     user_id = interaction.user.id
     now = time.time()
 
@@ -68,119 +109,289 @@ async def gen(interaction: discord.Interaction):
         if remaining > 0:
             await interaction.response.send_message(
                 f"You're on cooldown. Try again in {format_time(remaining)}.",
-                ephemeral=True
+                ephemeral=False
             )
             return
 
-    stock = get_stock()
+    # FREE GEN
+    if type.value == "free":
 
-    if not stock:
-        await interaction.response.send_message("Out of stock.", ephemeral=True)
-        return
+        stock = get_stock()
 
-    item = stock.pop(0)
-    save_stock(stock)
+        if not stock:
+            await interaction.response.send_message("Free stock is empty.", ephemeral=False)
+            return
+
+        item = stock.pop(0)
+        save_stock(stock)
+
+    # PREMIUM GEN
+    else:
+
+        if not isinstance(interaction.user, discord.Member) or not has_premium(interaction.user):
+            await interaction.response.send_message(
+                "You need the Premium role to use this.",
+                ephemeral=False
+            )
+            return
+
+        stock = get_premium_stock()
+
+        if not stock:
+            await interaction.response.send_message("Premium stock is empty.", ephemeral=False)
+            return
+
+        item = stock.pop(0)
+        save_premium_stock(stock)
 
     try:
-        await interaction.user.send(f"Your generated string:\n`{item}`")
+        await interaction.user.send(f"Your generated R6 account:\n{item}")
         cooldowns[user_id] = now
-        await interaction.response.send_message("Check your DMs.", ephemeral=True)
+
+        embed = discord.Embed(
+            title="Account Generated",
+            description="Check your DMs for your account.",
+            color=discord.Color.red()
+        )
+
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+
     except discord.Forbidden:
-        stock.insert(0, item)
-        save_stock(stock)
         await interaction.response.send_message(
             "I couldn't DM you. Turn on DMs and try again.",
-            ephemeral=True
+            ephemeral=False
         )
 
 
 @client.tree.command(
     name="restock",
-    description="Add strings to stock",
+    description="Add items to free or premium stock",
     guild=discord.Object(id=GUILD_ID)
 )
-@app_commands.describe(items="Paste strings separated by new lines")
-async def restock(interaction: discord.Interaction, items: str):
-    if not is_owner(interaction.user.id):
+@app_commands.describe(
+    stock_type="Choose which stock to add to",
+    items="Paste items separated by new lines"
+)
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def restock(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str],
+    items: str
+):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
         await interaction.response.send_message(
             "You are not allowed to use this command.",
-            ephemeral=True
+            ephemeral=False
         )
         return
 
     new_items = [line.strip() for line in items.splitlines() if line.strip()]
+
     if not new_items:
         await interaction.response.send_message(
             "No valid strings were provided.",
-            ephemeral=True
+            ephemeral=False
         )
         return
 
-    current_stock = get_stock()
-    current_stock.extend(new_items)
-    save_stock(current_stock)
+    if stock_type.value == "free":
+        current_stock = get_stock()
+        current_stock.extend(new_items)
+        save_stock(current_stock)
 
-    await interaction.response.send_message(
-        f"Added {len(new_items)} item(s). Total stock: {len(current_stock)}",
-        ephemeral=True
-    )
+        await interaction.response.send_message(
+            f"Added {len(new_items)} item(s) to FREE stock. Total free stock: {len(current_stock)}",
+            ephemeral=False
+        )
+
+    elif stock_type.value == "premium":
+        current_stock = get_premium_stock()
+        current_stock.extend(new_items)
+        save_premium_stock(current_stock)
+
+        await interaction.response.send_message(
+            f"Added {len(new_items)} item(s) to PREMIUM stock. Total premium stock: {len(current_stock)}",
+            ephemeral=False
+        )
 
 
 @client.tree.command(
     name="stock",
-    description="See how many items are left",
+    description="See how many accounts are left in stock",
     guild=discord.Object(id=GUILD_ID)
 )
 async def stock(interaction: discord.Interaction):
-    if not is_owner(interaction.user.id):
-        await interaction.response.send_message(
-            "You are not allowed to use this command.",
-            ephemeral=True
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
         )
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-    amount = len(get_stock())
-    await interaction.response.send_message(
-        f"There are {amount} item(s) in stock.",
-        ephemeral=True
+    free_amount = len(get_stock())
+    premium_amount = len(get_premium_stock())
+
+    embed = discord.Embed(
+        title="Stock Info",
+        description="Current stock amounts are below.",
+        color=discord.Color.red()
     )
+    embed.add_field(name="Free Stock", value=str(free_amount), inline=False)
+    embed.add_field(name="Premium Stock", value=str(premium_amount), inline=False)
+    embed.set_footer(text="Powered by @sevvyfr")
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
 @client.tree.command(
     name="stockview",
-    description="View all stock items",
+    description="View all free or premium stock items",
     guild=discord.Object(id=GUILD_ID)
 )
-async def stockview(interaction: discord.Interaction):
-    if not is_owner(interaction.user.id):
-        await interaction.response.send_message(
-            "You are not allowed to use this command.",
-            ephemeral=True
+@app_commands.describe(stock_type="Choose which stock to view")
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def stockview(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str]
+):
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
         )
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-    stock_items = get_stock()
+    if stock_type.value == "free":
+        stock_items = get_stock()
+        stock_name = "Free Stock"
+    else:
+        stock_items = get_premium_stock()
+        stock_name = "Premium Stock"
 
     if not stock_items:
-        await interaction.response.send_message(
-            "Stock is empty.",
-            ephemeral=True
+        embed = discord.Embed(
+            title=f"{stock_name}",
+            description="Stock is empty.",
+            color=discord.Color.red()
         )
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-    # Discord message limit is 2000 chars, so split if needed
     text = "\n".join(stock_items)
 
     if len(text) <= 1900:
-        await interaction.response.send_message(
-            f"Current stock:\n```{text}```",
-            ephemeral=True
+        embed = discord.Embed(
+            title=stock_name,
+            description=f"
+{text}
+",
+            color=discord.Color.red()
+        )
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+    else:
+        embed = discord.Embed(
+            title=stock_name,
+            description=f"Stock too long to show.\nTotal items: **{len(stock_items)}**",
+            color=discord.Color.red()
+        )
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="geninfo",
+    description="View stock and cooldown info",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def geninfo(interaction: discord.Interaction):
+
+    free_stock_amount = len(get_stock())
+    premium_stock_amount = len(get_premium_stock())
+    remaining = get_cooldown_remaining(interaction.user.id)
+
+    if remaining > 0:
+        cooldown_text = f"{format_time(remaining)} remaining"
+    else:
+        cooldown_text = "Ready now"
+
+    embed = discord.Embed(
+        title="Gen Info",
+        description="Your generator info.",
+        color=discord.Color.red()
+    )
+
+    embed.add_field(name="Free Stock Left", value=str(free_stock_amount), inline=False)
+    embed.add_field(name="Premium Stock Left", value=str(premium_stock_amount), inline=False)
+    embed.add_field(name="Your Cooldown", value=cooldown_text, inline=False)
+    embed.set_footer(text="Powered by @sevvyfr")
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+
+@client.tree.command(
+    name="clearstock",
+    description="Clear all items from stock",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(stock_type="Choose which stock to clear")
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def clearstock(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str]
+):
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    if stock_type.value == "free":
+        save_stock([])
+        embed = discord.Embed(
+            title="Stock Cleared",
+            description="Free stock has been cleared.",
+            color=discord.Color.red()
         )
     else:
-        await interaction.response.send_message(
-            f"Stock is too long to show in one message.\nTotal items: {len(stock_items)}",
-            ephemeral=True
+        save_premium_stock([])
+        embed = discord.Embed(
+            title="Stock Cleared",
+            description="Premium stock has been cleared.",
+            color=discord.Color.red()
         )
+
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
 client.run(TOKEN)
