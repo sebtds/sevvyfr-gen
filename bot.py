@@ -827,6 +827,16 @@ async def viewblacklist(interaction: discord.Interaction):
     for user_id in blacklisted_users:
         member = interaction.guild.get_member(user_id)
 
+        if member is None:
+            try:
+                member = await interaction.guild.fetch_member(user_id)
+            except discord.NotFound:
+                member = None
+            except discord.Forbidden:
+                member = None
+            except discord.HTTPException:
+                member = None
+
         if member:
             lines.append(f"{member.display_name} (@{member.name})")
         else:
@@ -850,7 +860,6 @@ async def viewblacklist(interaction: discord.Interaction):
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.followup.send(embed=embed)
-
 
 
 @client.tree.command(
