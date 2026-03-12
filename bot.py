@@ -107,7 +107,7 @@ def has_premium(member: discord.Member) -> bool:
 async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     await interaction.response.defer(ephemeral=False)
     
-    if interaction.user.id in blacklisted_users:
+if interaction.user.id in blacklisted_users:
 embed = discord.Embed(
         title="Access Denied",
         description="You are blacklisted from using this bot.",
