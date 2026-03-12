@@ -393,5 +393,90 @@ async def clearstock(
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
+@client.tree.command(
+    name="restockfile",
+    description="Add stock items from a .txt file",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(
+    stock_type="Choose which stock to add to",
+    file="Upload a .txt file with one item per line"
+)
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def restockfile(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str],
+    file: discord.Attachment
+):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        await interaction.response.send_message(
+            "You are not allowed to use this command.",
+            ephemeral=False
+        )
+        return
+
+    if not file.filename.endswith(".txt"):
+        await interaction.response.send_message(
+            "Only .txt files are allowed.",
+            ephemeral=False
+        )
+        return
+
+    try:
+        file_bytes = await file.read()
+        content = file_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        await interaction.response.send_message(
+            "That file is not valid UTF-8 text.",
+            ephemeral=False
+        )
+        return
+    except Exception as e:
+        await interaction.response.send_message(
+            f"Failed to read file: {e}",
+            ephemeral=False
+        )
+        return
+
+    new_items = [line.strip() for line in content.splitlines() if line.strip()]
+
+    if not new_items:
+        await interaction.response.send_message(
+            "The file is empty or has no valid lines.",
+            ephemeral=False
+        )
+        return
+
+    if stock_type.value == "free":
+        current_stock = get_stock()
+        current_stock.extend(new_items)
+        save_stock(current_stock)
+
+        embed = discord.Embed(
+            title="Free Stock Restocked",
+            description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+
+    else:
+        current_stock = get_premium_stock()
+        current_stock.extend(new_items)
+        save_premium_stock(current_stock)
+
+        embed = discord.Embed(
+            title="Premium Stock Restocked",
+            description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+
 
 client.run(TOKEN)
