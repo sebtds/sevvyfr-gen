@@ -1120,4 +1120,258 @@ async def removeduplicates(
     
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
+@client.tree.command(
+    name="checkuser",
+    description="Check a user's premium, blacklist, and cooldown status",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(user="User to check")
+async def checkuser(interaction: discord.Interaction, user: discord.Member):
+    await interaction.response.defer(ephemeral=False)
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.followup.send(embed=embed)
+        return
+
+    is_user_premium = has_premium(user)
+    is_user_blacklisted = user.id in blacklisted_users
+    free_remaining = get_cooldown_remaining(user.id, "free")
+    premium_remaining = get_cooldown_remaining(user.id, "premium")
+
+    free_text = f"{format_time(free_remaining)} remaining" if free_remaining > 0 else "Ready now"
+    premium_text = f"{format_time(premium_remaining)} remaining" if premium_remaining > 0 else "Ready now"
+
+    embed = discord.Embed(
+        title="User Info",
+        description=f"Info for {user.mention}",
+        color=EMBED_COLOR
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.add_field(name="Username", value=f"{user.display_name} (@{user.name})", inline=False)
+    embed.add_field(name="Premium", value="Yes" if is_user_premium else "No", inline=False)
+    embed.add_field(name="Blacklisted", value="Yes" if is_user_blacklisted else "No", inline=False)
+    embed.add_field(name="Free Cooldown", value=free_text, inline=False)
+    embed.add_field(name="Premium Cooldown", value=premium_text, inline=False)
+    embed.set_footer(text=EMBED_FOOTER)
+
+    await interaction.followup.send(embed=embed)
+
+@client.tree.command(
+    name="setthumbnail",
+    description="Change the embed thumbnail URL",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(url="Direct image URL for the thumbnail")
+async def setthumbnail(interaction: discord.Interaction, url: str):
+    global EMBED_THUMBNAIL
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if not (url.startswith("http://") or url.startswith("https://")):
+        embed = discord.Embed(
+            title="Invalid URL",
+            description="Thumbnail URL must start with http:// or https://",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    EMBED_THUMBNAIL = url
+
+    embed = discord.Embed(
+        title="Thumbnail Updated",
+        description="The embed thumbnail has been updated.",
+        color=EMBED_COLOR
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text=EMBED_FOOTER)
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="setfooter",
+    description="Change the embed footer text",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(text="New footer text")
+async def setfooter(interaction: discord.Interaction, text: str):
+    global EMBED_FOOTER
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    EMBED_FOOTER = text
+
+    embed = discord.Embed(
+        title="Footer Updated",
+        description=f"New footer:\n`{EMBED_FOOTER}`",
+        color=EMBED_COLOR
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text=EMBED_FOOTER)
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="setembedcolor",
+    description="Change the embed color using a hex code",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(hex_color="Example: #ff0000 or ff0000")
+async def setembedcolor(interaction: discord.Interaction, hex_color: str):
+    global EMBED_COLOR
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    hex_color = hex_color.strip().replace("#", "")
+
+    if len(hex_color) != 6:
+        embed = discord.Embed(
+            title="Invalid Color",
+            description="Hex color must be 6 characters long.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    try:
+        color_value = int(hex_color, 16)
+    except ValueError:
+        embed = discord.Embed(
+            title="Invalid Color",
+            description="That is not a valid hex color.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    EMBED_COLOR = discord.Color(color_value)
+
+    embed = discord.Embed(
+        title="Embed Color Updated",
+        description=f"New embed color set to `#{hex_color.lower()}`.",
+        color=EMBED_COLOR
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text=EMBED_FOOTER)
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="removeitem",
+    description="Remove one exact item from free or premium stock",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(
+    stock_type="Choose which stock to remove from",
+    item="The exact item to remove"
+)
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def removeitem(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str],
+    item: str
+):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if stock_type.value == "free":
+        stock = get_stock()
+
+        if item not in stock:
+            embed = discord.Embed(
+                title="Item Not Found",
+                description="That item was not found in free stock.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+        stock.remove(item)
+        save_stock(stock)
+
+        embed = discord.Embed(
+            title="Item Removed",
+            description="Removed item from free stock.",
+            color=EMBED_COLOR
+        )
+        embed.add_field(name="Free Stock Left", value=str(len(stock)), inline=False)
+
+    else:
+        stock = get_premium_stock()
+
+        if item not in stock:
+            embed = discord.Embed(
+                title="Item Not Found",
+                description="That item was not found in premium stock.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+        stock.remove(item)
+        save_premium_stock(stock)
+
+        embed = discord.Embed(
+            title="Item Removed",
+            description="Removed item from premium stock.",
+            color=EMBED_COLOR
+        )
+        embed.add_field(name="Premium Stock Left", value=str(len(stock)), inline=False)
+
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text=EMBED_FOOTER)
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+    
 client.run(TOKEN)
