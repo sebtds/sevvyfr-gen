@@ -104,18 +104,7 @@ def has_premium(member: discord.Member) -> bool:
     app_commands.Choice(name="Free", value="free"),
     app_commands.Choice(name="Premium", value="premium")
 ])
-@client.tree.command(
-    name="gen",
-    description="Generate an account",
-    guild=discord.Object(id=GUILD_ID)
-)
-@app_commands.describe(type="Choose stock type")
-@app_commands.choices(type=[
-    app_commands.Choice(name="Free", value="free"),
-    app_commands.Choice(name="Premium", value="premium")
-])
 async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
-
     user_id = interaction.user.id
     now = time.time()
     stock_type = type.value
@@ -133,11 +122,9 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             )
             embed.set_thumbnail(url=EMBED_THUMBNAIL)
             embed.set_footer(text="Powered by @sevvyfr")
-
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
-    # FREE GEN
     if stock_type == "free":
         stock = get_stock()
 
@@ -149,14 +136,12 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             )
             embed.set_thumbnail(url=EMBED_THUMBNAIL)
             embed.set_footer(text="Powered by @sevvyfr")
-
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         item = stock.pop(0)
         save_stock(stock)
 
-    # PREMIUM GEN
     else:
         if not isinstance(interaction.user, discord.Member) or not has_premium(interaction.user):
             embed = discord.Embed(
@@ -166,7 +151,6 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             )
             embed.set_thumbnail(url=EMBED_THUMBNAIL)
             embed.set_footer(text="Powered by @sevvyfr")
-
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
@@ -180,7 +164,6 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             )
             embed.set_thumbnail(url=EMBED_THUMBNAIL)
             embed.set_footer(text="Powered by @sevvyfr")
-
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
@@ -198,7 +181,6 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
-
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
     except discord.Forbidden:
@@ -209,9 +191,8 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
-
         await interaction.response.send_message(embed=embed, ephemeral=False)
-        
+
 @client.tree.command(
     name="restock",
     description="Add items to free or premium stock",
