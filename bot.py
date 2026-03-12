@@ -828,7 +828,7 @@ async def viewblacklist(interaction: discord.Interaction):
         member = interaction.guild.get_member(user_id)
 
         if member:
-            lines.append(f"{member.mention} ({member.name})")
+            lines.append(f"{member.display_name} (@{member.name})")
         else:
             lines.append(f"Unknown User ({user_id})")
 
