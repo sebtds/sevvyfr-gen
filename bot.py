@@ -663,6 +663,8 @@ async def help_command(interaction: discord.Interaction):
             "`/removestock` - Remove items from stock\n"
             "`/resetcooldown` - Reset one user's cooldown\n"
             "`/clearcooldowns` - Clear all cooldowns\n"
+            "`/botinfo` - View bot info\n"
+            "`/removeduplicates` - Remove duplicate stock items\n"
         ),
         inline=False
     )
