@@ -19,7 +19,7 @@ PREMIUM_COOLDOWN_SECONDS = 120
 EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
 
 cooldowns = {}
-blacklisted_users = get_blacklist()
+
 class MyClient(discord.Client):
     def __init__(self):
         intents = discord.Intents.default()
