@@ -792,14 +792,14 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
-
-
 @client.tree.command(
     name="viewblacklist",
-    description="View all blacklisted user IDs",
+    description="View all blacklisted users",
     guild=discord.Object(id=GUILD_ID)
 )
 async def viewblacklist(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=False)
+
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
         embed = discord.Embed(
             title="Access Denied",
@@ -808,7 +808,7 @@ async def viewblacklist(interaction: discord.Interaction):
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed)
         return
 
     if not blacklisted_users:
@@ -819,10 +819,20 @@ async def viewblacklist(interaction: discord.Interaction):
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed)
         return
 
-    text = "\n".join(str(user_id) for user_id in blacklisted_users)
+    lines = []
+
+    for user_id in blacklisted_users:
+        member = interaction.guild.get_member(user_id)
+
+        if member:
+            lines.append(f"{member.mention} ({member.name})")
+        else:
+            lines.append(f"Unknown User ({user_id})")
+
+    text = "\n".join(lines)
 
     if len(text) > 1900:
         embed = discord.Embed(
@@ -833,13 +843,15 @@ async def viewblacklist(interaction: discord.Interaction):
     else:
         embed = discord.Embed(
             title="Blacklist",
-            description=f"```{text}```",
+            description=text,
             color=discord.Color.red()
         )
 
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    await interaction.followup.send(embed=embed)
+
+
 
 @client.tree.command(
     name="clearblacklist",
