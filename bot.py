@@ -994,5 +994,90 @@ async def clearcooldowns(interaction: discord.Interaction):
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
     
+@client.tree.command(
+    name="botinfo",
+    description="View bot info, stock, cooldowns, and blacklist count",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def botinfo(interaction: discord.Interaction):
+    free_stock = len(get_stock())
+    premium_stock = len(get_premium_stock())
+    blacklist_count = len(blacklisted_users)
+    cooldown_count = len(cooldowns)
+    ping_ms = round(client.latency * 1000)
+
+    embed = discord.Embed(
+        title="Bot Info",
+        description="Current bot information.",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.add_field(name="Ping", value=f"{ping_ms}ms", inline=False)
+    embed.add_field(name="Free Stock", value=str(free_stock), inline=False)
+    embed.add_field(name="Premium Stock", value=str(premium_stock), inline=False)
+    embed.add_field(name="Free Cooldown", value=f"{FREE_COOLDOWN_SECONDS}s", inline=False)
+    embed.add_field(name="Premium Cooldown", value=f"{PREMIUM_COOLDOWN_SECONDS}s", inline=False)
+    embed.add_field(name="Active Cooldowns", value=str(cooldown_count), inline=False)
+    embed.add_field(name="Blacklisted Users", value=str(blacklist_count), inline=False)
+    embed.set_footer(text="Powered by @sevvyfr")
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="removeduplicates",
+    description="Remove duplicate items from free or premium stock",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(stock_type="Choose which stock to clean")
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def removeduplicates(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str]
+):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if stock_type.value == "free":
+        stock = get_stock()
+        original_count = len(stock)
+        cleaned_stock = list(dict.fromkeys(stock))
+        removed_count = original_count - len(cleaned_stock)
+        save_stock(cleaned_stock)
+
+        embed = discord.Embed(
+            title="Free Stock Cleaned",
+            description=f"Removed **{removed_count}** duplicate item(s).",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Free Stock Left", value=str(len(cleaned_stock)), inline=False)
+
+    else:
+        stock = get_premium_stock()
+        original_count = len(stock)
+        cleaned_stock = list(dict.fromkeys(stock))
+        removed_count = original_count - len(cleaned_stock)
+        save_premium_stock(cleaned_stock)
+
+        embed = discord.Embed(
+            title="Premium Stock Cleaned",
+            description=f"Removed **{removed_count}** duplicate item(s).",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Premium Stock Left", value=str(len(cleaned_stock)), inline=False)
+
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 client.run(TOKEN)
