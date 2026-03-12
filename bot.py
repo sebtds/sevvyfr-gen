@@ -146,16 +146,16 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     cooldown_time = FREE_COOLDOWN_SECONDS if stock_type == "free" else PREMIUM_COOLDOWN_SECONDS
 
-if key in cooldowns:
+    if key in cooldowns:
         remaining = int(cooldown_time - (now - cooldowns[key]))
         if remaining > 0:
             embed = discord.Embed(
                 title="Cooldown Active",
                 description=f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
                 color=EMBED_COLOR
-        )
-embed.set_thumbnail(url=EMBED_THUMBNAIL)
-embed.set_footer(text=EMBED_FOOTER)
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -166,10 +166,10 @@ embed.set_footer(text=EMBED_FOOTER)
             embed = discord.Embed(
                 title="Out of Stock",
                 description="Free stock is empty.",
-               color=EMBED_COLOR
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -181,10 +181,10 @@ embed.set_footer(text=EMBED_FOOTER)
             embed = discord.Embed(
                 title="Access Denied",
                 description="You need the Premium role to use this.",
-              color=EMBED_COLOR
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -195,9 +195,9 @@ embed.set_footer(text=EMBED_FOOTER)
                 title="Out of Stock",
                 description="Premium stock is empty.",
                 color=EMBED_COLOR
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
