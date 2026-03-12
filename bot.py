@@ -106,18 +106,18 @@ def has_premium(member: discord.Member) -> bool:
 ])
 async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     await interaction.response.defer(ephemeral=False)
-    
-if interaction.user.id in blacklisted_users:
-embed = discord.Embed(
-        title="Access Denied",
-        description="You are blacklisted from using this bot.",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
-    await interaction.followup.send(embed=embed)
-    return
-    
+
+    if interaction.user.id in blacklisted_users:
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are blacklisted from using this bot.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.followup.send(embed=embed)
+        return
+
     user_id = interaction.user.id
     now = time.time()
     stock_type = type.value
