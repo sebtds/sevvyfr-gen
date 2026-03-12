@@ -110,6 +110,8 @@ def save_blacklist(user_ids):
     with open(BLACKLIST_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(str(user_id) for user_id in user_ids))
 
+blacklisted_users = get_blacklist()
+
 @client.tree.command(
     name="gen",
     description="Generate an account",
