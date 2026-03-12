@@ -18,7 +18,7 @@ PREMIUM_COOLDOWN_SECONDS = 120
 EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
 
 cooldowns = {}
-
+blacklisted_users = set()
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -106,7 +106,18 @@ def has_premium(member: discord.Member) -> bool:
 ])
 async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     await interaction.response.defer(ephemeral=False)
-
+    
+    if interaction.user.id in blacklisted_users:
+    embed = discord.Embed(
+        title="Access Denied",
+        description="You are blacklisted from using this bot.",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.followup.send(embed=embed)
+    return
+    
     user_id = interaction.user.id
     now = time.time()
     stock_type = type.value
@@ -586,6 +597,170 @@ async def setcooldown(
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
 
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="help",
+    description="Show all bot commands",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def help_command(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="Bot Commands",
+        description="List of available commands.",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+
+    embed.add_field(
+        name="Generator",
+        value=(
+            "`/gen` - Generate an account\n"
+            "`/geninfo` - View stock and cooldown info"
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="Stock",
+        value=(
+            "`/restock` - Add stock by text\n"
+            "`/restockfile` - Add stock by .txt file\n"
+            "`/stock` - View stock amounts\n"
+            "`/stockview` - View all stock items\n"
+            "`/clearstock` - Clear stock"
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="Admin",
+        value=(
+            "`/setcooldown` - Change free or premium cooldown\n"
+            "`/setstatus` - Change bot status text\n"
+            "`/blacklist` - Blacklist a user\n"
+            "`/unblacklist` - Remove a user from blacklist"
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="Other",
+        value="`/help` - Show this message",
+        inline=False
+    )
+
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+@client.tree.command(
+    name="setstatus",
+    description="Change the bot status text",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(status_text="The text to show in the bot status")
+async def setstatus(interaction: discord.Interaction, status_text: str):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    await client.change_presence(
+        status=discord.Status.dnd,
+        activity=discord.Game(name=status_text)
+    )
+
+    embed = discord.Embed(
+        title="Status Updated",
+        description=f"Bot status changed to:\n`{status_text}`",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+    @client.tree.command(
+    name="blacklist",
+    description="Blacklist a user from using the generator",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(user="User to blacklist")
+async def blacklist(interaction: discord.Interaction, user: discord.Member):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if user.id in blacklisted_users:
+        embed = discord.Embed(
+            title="Already Blacklisted",
+            description=f"{user.mention} is already blacklisted.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    blacklisted_users.add(user.id)
+
+    embed = discord.Embed(
+        title="User Blacklisted",
+        description=f"{user.mention} has been blacklisted.",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+    @client.tree.command(
+    name="unblacklist",
+    description="Remove a user from the blacklist",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(user="User to remove from blacklist")
+async def unblacklist(interaction: discord.Interaction, user: discord.Member):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if user.id not in blacklisted_users:
+        embed = discord.Embed(
+            title="Not Blacklisted",
+            description=f"{user.mention} is not blacklisted.",
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    blacklisted_users.remove(user.id)
+
+    embed = discord.Embed(
+        title="User Unblacklisted",
+        description=f"{user.mention} has been removed from the blacklist.",
+        color=discord.Color.red()
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 client.run(TOKEN)
