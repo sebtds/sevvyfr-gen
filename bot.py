@@ -104,6 +104,16 @@ def has_premium(member: discord.Member) -> bool:
     app_commands.Choice(name="Free", value="free"),
     app_commands.Choice(name="Premium", value="premium")
 ])
+@client.tree.command(
+    name="gen",
+    description="Generate an account",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(type="Choose stock type")
+@app_commands.choices(type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
 async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     user_id = interaction.user.id
@@ -116,10 +126,15 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     if key in cooldowns:
         remaining = int(cooldown_time - (now - cooldowns[key]))
         if remaining > 0:
-            await interaction.response.send_message(
-                f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
-                ephemeral=False
+            embed = discord.Embed(
+                title="Cooldown Active",
+                description=f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
+                color=discord.Color.red()
             )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text="Powered by @sevvyfr")
+
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
     # FREE GEN
@@ -127,7 +142,15 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         stock = get_stock()
 
         if not stock:
-            await interaction.response.send_message("Free stock is empty.", ephemeral=False)
+            embed = discord.Embed(
+                title="Out of Stock",
+                description="Free stock is empty.",
+                color=discord.Color.red()
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text="Powered by @sevvyfr")
+
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         item = stock.pop(0)
@@ -136,16 +159,29 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     # PREMIUM GEN
     else:
         if not isinstance(interaction.user, discord.Member) or not has_premium(interaction.user):
-            await interaction.response.send_message(
-                "You need the Premium role to use this.",
-                ephemeral=False
+            embed = discord.Embed(
+                title="Access Denied",
+                description="You need the Premium role to use this.",
+                color=discord.Color.red()
             )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text="Powered by @sevvyfr")
+
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         stock = get_premium_stock()
 
         if not stock:
-            await interaction.response.send_message("Premium stock is empty.", ephemeral=False)
+            embed = discord.Embed(
+                title="Out of Stock",
+                description="Premium stock is empty.",
+                color=discord.Color.red()
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text="Powered by @sevvyfr")
+
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         item = stock.pop(0)
@@ -160,15 +196,21 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             description=f"Check your DMs for your {stock_type} account.",
             color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text="Powered by @sevvyfr")
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
     except discord.Forbidden:
-        await interaction.response.send_message(
-            "I couldn't DM you. Turn on DMs and try again.",
-            ephemeral=False
+        embed = discord.Embed(
+            title="DM Failed",
+            description="I couldn't DM you. Turn on DMs and try again.",
+            color=discord.Color.red()
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text="Powered by @sevvyfr")
+
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         
 @client.tree.command(
     name="restock",
