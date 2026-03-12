@@ -13,7 +13,8 @@ PREMIUM_ROLE_ID = 1481062565810536631  # replace later
 PREMIUM_STOCK_FILE = "premium_stock.txt"
 
 STOCK_FILE = "stock.txt"
-COOLDOWN_SECONDS = 300
+FREE_COOLDOWN_SECONDS = 300
+PREMIUM_COOLDOWN_SECONDS = 120
 
 cooldowns = {}
 
@@ -58,11 +59,14 @@ def has_permission(member: discord.Member) -> bool:
     return any(role.id == ADMIN_ROLE_ID for role in member.roles)
 
 
-def get_cooldown_remaining(user_id: int) -> int:
-    if user_id not in cooldowns:
+def get_cooldown_remaining(user_id: int, stock_type: str) -> int:
+    key = (user_id, stock_type)
+
+    if key not in cooldowns:
         return 0
 
-    remaining = int(COOLDOWN_SECONDS - (time.time() - cooldowns[user_id]))
+    cooldown_time = FREE_COOLDOWN_SECONDS if stock_type == "free" else PREMIUM_COOLDOWN_SECONDS
+    remaining = int(cooldown_time - (time.time() - cooldowns[key]))
     return max(0, remaining)
 
 
@@ -103,19 +107,22 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     user_id = interaction.user.id
     now = time.time()
+    stock_type = type.value
+    key = (user_id, stock_type)
 
-    if user_id in cooldowns:
-        remaining = int(COOLDOWN_SECONDS - (now - cooldowns[user_id]))
+    cooldown_time = FREE_COOLDOWN_SECONDS if stock_type == "free" else PREMIUM_COOLDOWN_SECONDS
+
+    if key in cooldowns:
+        remaining = int(cooldown_time - (now - cooldowns[key]))
         if remaining > 0:
             await interaction.response.send_message(
-                f"You're on cooldown. Try again in {format_time(remaining)}.",
+                f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
                 ephemeral=False
             )
             return
 
     # FREE GEN
-    if type.value == "free":
-
+    if stock_type == "free":
         stock = get_stock()
 
         if not stock:
@@ -127,7 +134,6 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     # PREMIUM GEN
     else:
-
         if not isinstance(interaction.user, discord.Member) or not has_premium(interaction.user):
             await interaction.response.send_message(
                 "You need the Premium role to use this.",
@@ -145,15 +151,14 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         save_premium_stock(stock)
 
     try:
-        await interaction.user.send(f"Your generated R6 account:\n{item}")
-        cooldowns[user_id] = now
+        await interaction.user.send(f"Your generated R6 account:\n`{item}`")
+        cooldowns[key] = now
 
         embed = discord.Embed(
             title="Account Generated",
-            description="Check your DMs for your account.",
+            description=f"Check your DMs for your {stock_type} account.",
             color=discord.Color.red()
         )
-
         embed.set_footer(text="Powered by @sevvyfr")
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
@@ -163,8 +168,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             "I couldn't DM you. Turn on DMs and try again.",
             ephemeral=False
         )
-
-
+        
 @client.tree.command(
     name="restock",
     description="Add items to free or premium stock",
@@ -325,16 +329,21 @@ async def stockview(
     description="View stock and cooldown info",
     guild=discord.Object(id=GUILD_ID)
 )
+@client.tree.command(
+    name="geninfo",
+    description="View stock and cooldown info",
+    guild=discord.Object(id=GUILD_ID)
+)
 async def geninfo(interaction: discord.Interaction):
 
     free_stock_amount = len(get_stock())
     premium_stock_amount = len(get_premium_stock())
-    remaining = get_cooldown_remaining(interaction.user.id)
 
-    if remaining > 0:
-        cooldown_text = f"{format_time(remaining)} remaining"
-    else:
-        cooldown_text = "Ready now"
+    free_remaining = get_cooldown_remaining(interaction.user.id, "free")
+    premium_remaining = get_cooldown_remaining(interaction.user.id, "premium")
+
+    free_cooldown_text = f"{format_time(free_remaining)} remaining" if free_remaining > 0 else "Ready now"
+    premium_cooldown_text = f"{format_time(premium_remaining)} remaining" if premium_remaining > 0 else "Ready now"
 
     embed = discord.Embed(
         title="Gen Info",
@@ -344,11 +353,11 @@ async def geninfo(interaction: discord.Interaction):
 
     embed.add_field(name="Free Stock Left", value=str(free_stock_amount), inline=False)
     embed.add_field(name="Premium Stock Left", value=str(premium_stock_amount), inline=False)
-    embed.add_field(name="Your Cooldown", value=cooldown_text, inline=False)
+    embed.add_field(name="Free Cooldown", value=free_cooldown_text, inline=False)
+    embed.add_field(name="Premium Cooldown", value=premium_cooldown_text, inline=False)
     embed.set_footer(text="Powered by @sevvyfr")
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
-
 
 @client.tree.command(
     name="clearstock",
@@ -480,12 +489,23 @@ async def restockfile(
 
 @client.tree.command(
     name="setcooldown",
-    description="Change the generator cooldown in seconds",
+    description="Change the free or premium cooldown in seconds",
     guild=discord.Object(id=GUILD_ID)
 )
-@app_commands.describe(seconds="New cooldown in seconds")
-async def setcooldown(interaction: discord.Interaction, seconds: int):
-    global COOLDOWN_SECONDS
+@app_commands.describe(
+    stock_type="Choose which cooldown to change",
+    seconds="New cooldown in seconds"
+)
+@app_commands.choices(stock_type=[
+    app_commands.Choice(name="Free", value="free"),
+    app_commands.Choice(name="Premium", value="premium")
+])
+async def setcooldown(
+    interaction: discord.Interaction,
+    stock_type: app_commands.Choice[str],
+    seconds: int
+):
+    global FREE_COOLDOWN_SECONDS, PREMIUM_COOLDOWN_SECONDS
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
         embed = discord.Embed(
@@ -504,16 +524,20 @@ async def setcooldown(interaction: discord.Interaction, seconds: int):
         )
         return
 
-    COOLDOWN_SECONDS = seconds
+    if stock_type.value == "free":
+        FREE_COOLDOWN_SECONDS = seconds
+        message = f"Free cooldown is now **{FREE_COOLDOWN_SECONDS}** seconds."
+    else:
+        PREMIUM_COOLDOWN_SECONDS = seconds
+        message = f"Premium cooldown is now **{PREMIUM_COOLDOWN_SECONDS}** seconds."
 
     embed = discord.Embed(
         title="Cooldown Updated",
-        description=f"Generator cooldown is now **{COOLDOWN_SECONDS} seconds**.",
+        description=message,
         color=discord.Color.red()
     )
     embed.set_footer(text="Powered by @sevvyfr")
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
-
 
 client.run(TOKEN)
