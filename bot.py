@@ -478,5 +478,42 @@ async def restockfile(
         embed.set_footer(text="Powered by @sevvyfr")
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
+@client.tree.command(
+    name="setcooldown",
+    description="Change the generator cooldown in seconds",
+    guild=discord.Object(id=GUILD_ID)
+)
+@app_commands.describe(seconds="New cooldown in seconds")
+async def setcooldown(interaction: discord.Interaction, seconds: int):
+    global COOLDOWN_SECONDS
+
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=discord.Color.red()
+        )
+        embed.set_footer(text="Powered by @sevvyfr")
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
+
+    if seconds < 0:
+        await interaction.response.send_message(
+            "Cooldown must be 0 or higher.",
+            ephemeral=False
+        )
+        return
+
+    COOLDOWN_SECONDS = seconds
+
+    embed = discord.Embed(
+        title="Cooldown Updated",
+        description=f"Generator cooldown is now **{COOLDOWN_SECONDS} seconds**.",
+        color=discord.Color.red()
+    )
+    embed.set_footer(text="Powered by @sevvyfr")
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
 
 client.run(TOKEN)
