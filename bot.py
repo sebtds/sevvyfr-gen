@@ -17,6 +17,9 @@ STOCK_FILE = "stock.txt"
 FREE_COOLDOWN_SECONDS = 300
 PREMIUM_COOLDOWN_SECONDS = 120
 EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
+EMBED_COLOR = discord.Color.red()
+EMBED_FOOTER = "Powered by @sevvyfr"
+
 
 cooldowns = {}
 
@@ -129,10 +132,10 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         embed = discord.Embed(
             title="Access Denied",
             description="You are blacklisted from using this bot.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
@@ -149,10 +152,10 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             embed = discord.Embed(
                 title="Cooldown Active",
                 description=f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text="Powered by @sevvyfr")
+                color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -163,10 +166,10 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             embed = discord.Embed(
                 title="Out of Stock",
                 description="Free stock is empty.",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text="Powered by @sevvyfr")
+               color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -178,10 +181,10 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             embed = discord.Embed(
                 title="Access Denied",
                 description="You need the Premium role to use this.",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text="Powered by @sevvyfr")
+              color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -191,10 +194,10 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             embed = discord.Embed(
                 title="Out of Stock",
                 description="Premium stock is empty.",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text="Powered by @sevvyfr")
+                color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -208,20 +211,20 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         embed = discord.Embed(
             title="Account Generated",
             description=f"Check your DMs for your {stock_type} account.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
 
     except discord.Forbidden:
         embed = discord.Embed(
             title="DM Failed",
             description="I couldn't DM you. Turn on DMs and try again.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
 
 @client.tree.command(
@@ -246,10 +249,10 @@ async def restock(
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
@@ -260,10 +263,10 @@ async def restock(
         embed = discord.Embed(
             title="Restock Failed",
             description="No valid strings were provided.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
@@ -276,12 +279,13 @@ async def restock(
         embed = discord.Embed(
             title="Free Stock Restocked",
             description=f"Added **{len(new_items)}** item(s) to FREE stock.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Added", value=str(len(new_items)), inline=False)
         embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
-        embed.set_footer(text="Powered by @sevvyfr")
+        
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -293,12 +297,13 @@ async def restock(
         embed = discord.Embed(
             title="Premium Stock Restocked",
             description=f"Added **{len(new_items)}** item(s) to PREMIUM stock.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Added", value=str(len(new_items)), inline=False)
         embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
-        embed.set_footer(text="Powered by @sevvyfr")
+        
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -313,10 +318,10 @@ async def stock(interaction: discord.Interaction):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
 
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
@@ -327,12 +332,13 @@ async def stock(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Stock Info",
         description="Current stock amounts are below.",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     embed.add_field(name="Free Stock", value=str(free_amount), inline=False)
     embed.add_field(name="Premium Stock", value=str(premium_amount), inline=False)
-    embed.set_footer(text="Powered by @sevvyfr")
+    
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -355,10 +361,10 @@ async def stockview(
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -373,10 +379,10 @@ async def stockview(
         embed = discord.Embed(
             title=stock_name,
             description="Stock is empty.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -386,19 +392,19 @@ async def stockview(
         embed = discord.Embed(
             title=stock_name,
             description=f"```{text}```",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
     else:
         embed = discord.Embed(
             title=stock_name,
             description=f"Stock too long to show.\nTotal items: **{len(stock_items)}**",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -420,14 +426,15 @@ async def geninfo(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Gen Info",
         description="Your generator info.",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     embed.add_field(name="Free Stock Left", value=str(free_stock_amount), inline=False)
     embed.add_field(name="Premium Stock Left", value=str(premium_stock_amount), inline=False)
     embed.add_field(name="Free Cooldown", value=free_cooldown_text, inline=False)
     embed.add_field(name="Premium Cooldown", value=premium_cooldown_text, inline=False)
-    embed.set_footer(text="Powered by @sevvyfr")
+    
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -450,10 +457,10 @@ async def clearstock(
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
@@ -469,10 +476,10 @@ async def clearstock(
         embed = discord.Embed(
             title="Stock Cleared",
             description="Premium stock has been cleared.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -540,11 +547,12 @@ async def restockfile(
         embed = discord.Embed(
             title="Free Stock Restocked",
             description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
-        embed.set_footer(text="Powered by @sevvyfr")
+        
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
     else:
@@ -555,11 +563,12 @@ async def restockfile(
         embed = discord.Embed(
             title="Premium Stock Restocked",
             description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
-        embed.set_footer(text="Powered by @sevvyfr")
+        
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -586,10 +595,10 @@ async def setcooldown(
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+           color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -610,10 +619,10 @@ async def setcooldown(
     embed = discord.Embed(
         title="Cooldown Updated",
         description=message,
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -674,8 +683,10 @@ async def help_command(interaction: discord.Interaction):
         value="`/help` - Show this message",
         inline=False
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -689,10 +700,10 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -704,10 +715,10 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
     embed = discord.Embed(
         title="Status Updated",
         description=f"Bot status changed to:\n`{status_text}`",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
     
 @client.tree.command(
@@ -721,10 +732,10 @@ async def blacklist(interaction: discord.Interaction, user: discord.Member):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -732,10 +743,10 @@ async def blacklist(interaction: discord.Interaction, user: discord.Member):
         embed = discord.Embed(
             title="Already Blacklisted",
             description=f"{user.mention} is already blacklisted.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -745,10 +756,10 @@ async def blacklist(interaction: discord.Interaction, user: discord.Member):
     embed = discord.Embed(
         title="User Blacklisted",
         description=f"{user.mention} has been blacklisted.",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -762,10 +773,10 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+           color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -773,10 +784,10 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
         embed = discord.Embed(
             title="Not Blacklisted",
             description=f"{user.mention} is not blacklisted.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -786,10 +797,10 @@ async def unblacklist(interaction: discord.Interaction, user: discord.Member):
     embed = discord.Embed(
         title="User Unblacklisted",
         description=f"{user.mention} has been removed from the blacklist.",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -804,10 +815,10 @@ async def viewblacklist(interaction: discord.Interaction):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
@@ -815,10 +826,10 @@ async def viewblacklist(interaction: discord.Interaction):
         embed = discord.Embed(
             title="Blacklist",
             description="No users are blacklisted.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
@@ -854,11 +865,10 @@ async def viewblacklist(interaction: discord.Interaction):
         embed = discord.Embed(
             title="Blacklist",
             description=text,
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
-
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.followup.send(embed=embed)
 
 
@@ -874,10 +884,10 @@ async def clearblacklist(interaction: discord.Interaction):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -888,10 +898,10 @@ async def clearblacklist(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Blacklist Cleared",
         description=f"Cleared **{cleared_count}** blacklisted user(s).",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -916,10 +926,10 @@ async def removestock(
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -927,10 +937,10 @@ async def removestock(
         embed = discord.Embed(
             title="Invalid Amount",
             description="Amount must be greater than 0.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -941,10 +951,10 @@ async def removestock(
             embed = discord.Embed(
                 title="Free Stock",
                 description="Free stock is already empty.",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text="Powered by @sevvyfr")
+                color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
@@ -955,8 +965,10 @@ async def removestock(
         embed = discord.Embed(
             title="Free Stock Updated",
             description=f"Removed **{removed_amount}** item(s) from free stock.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Free Stock Left", value=str(len(stock)), inline=False)
 
     else:
@@ -966,10 +978,10 @@ async def removestock(
             embed = discord.Embed(
                 title="Premium Stock",
                 description="Premium stock is already empty.",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text="Powered by @sevvyfr")
+                color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
@@ -980,12 +992,13 @@ async def removestock(
         embed = discord.Embed(
             title="Premium Stock Updated",
             description=f"Removed **{removed_amount}** item(s) from premium stock.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Premium Stock Left", value=str(len(stock)), inline=False)
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+ 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
@@ -998,10 +1011,10 @@ async def clearcooldowns(interaction: discord.Interaction):
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -1011,10 +1024,10 @@ async def clearcooldowns(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Cooldowns Cleared",
         description=f"Cleared **{cleared_count}** active cooldown(s).",
-        color=discord.Color.red()
-    )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+        color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
     
 @client.tree.command(
@@ -1032,7 +1045,8 @@ async def botinfo(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Bot Info",
         description="Current bot information.",
-        color=discord.Color.red()
+        color=EMBED_COLOR
+       
     )
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.add_field(name="Ping", value=f"{ping_ms}ms", inline=False)
@@ -1042,7 +1056,7 @@ async def botinfo(interaction: discord.Interaction):
     embed.add_field(name="Premium Cooldown", value=f"{PREMIUM_COOLDOWN_SECONDS}s", inline=False)
     embed.add_field(name="Active Cooldowns", value=str(cooldown_count), inline=False)
     embed.add_field(name="Blacklisted Users", value=str(blacklist_count), inline=False)
-    embed.set_footer(text="Powered by @sevvyfr")
+    embed.set_footer(text=EMBED_FOOTER)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -1064,10 +1078,10 @@ async def removeduplicates(
         embed = discord.Embed(
             title="Access Denied",
             description="You are not allowed to use this command.",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text="Powered by @sevvyfr")
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -1081,8 +1095,10 @@ async def removeduplicates(
         embed = discord.Embed(
             title="Free Stock Cleaned",
             description=f"Removed **{removed_count}** duplicate item(s).",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Free Stock Left", value=str(len(cleaned_stock)), inline=False)
 
     else:
@@ -1095,12 +1111,13 @@ async def removeduplicates(
         embed = discord.Embed(
             title="Premium Stock Cleaned",
             description=f"Removed **{removed_count}** duplicate item(s).",
-            color=discord.Color.red()
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="Premium Stock Left", value=str(len(cleaned_stock)), inline=False)
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text="Powered by @sevvyfr")
+    
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 client.run(TOKEN)
