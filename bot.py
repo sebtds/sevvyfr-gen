@@ -333,12 +333,11 @@ async def stock(interaction: discord.Interaction):
         title="Stock Info",
         description="Current stock amounts are below.",
         color=EMBED_COLOR
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
+    )
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text=EMBED_FOOTER)
     embed.add_field(name="Free Stock", value=str(free_amount), inline=False)
     embed.add_field(name="Premium Stock", value=str(premium_amount), inline=False)
-    
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
