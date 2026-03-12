@@ -684,7 +684,8 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text="Powered by @sevvyfr")
     await interaction.response.send_message(embed=embed, ephemeral=False)
-    @client.tree.command(
+    
+@client.tree.command(
     name="blacklist",
     description="Blacklist a user from using the generator",
     guild=discord.Object(id=GUILD_ID)
