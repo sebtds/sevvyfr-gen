@@ -272,6 +272,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         embed.add_field(name="🎟 Type", value=stock_type.title(), inline=True)
         embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
         embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+        embed.add_field(name="👤 Requested By", value=interaction.user.mention, inline=False)
         embed.timestamp = datetime.datetime.utcnow()
         embed.set_footer(text=EMBED_FOOTER)
 
