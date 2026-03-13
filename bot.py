@@ -343,8 +343,8 @@ async def restock(
         )
         embed.set_thumbnail(url=EMBED_THUMBNAIL)
         embed.set_footer(text=EMBED_FOOTER)
-        embed.add_field(name="Added", value=str(len(new_items)), inline=False)
-        embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
+        embed.add_field(name="📥 Added", value=str(len(new_items)), inline=False)
+        embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
     else:
@@ -391,8 +391,8 @@ async def stock(interaction: discord.Interaction):
     )
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text=EMBED_FOOTER)
-    embed.add_field(name="Free Stock", value=str(free_amount), inline=False)
-    embed.add_field(name="Premium Stock", value=str(premium_amount), inline=False)
+   embed.add_field(name="📦 Free Stock", value=str(free_amount), inline=False)
+    embed.add_field(name="💎 Premium Stock", value=str(premium_amount), inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -482,10 +482,10 @@ async def geninfo(interaction: discord.Interaction):
     )
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text=EMBED_FOOTER)
-    embed.add_field(name="Free Stock Left", value=str(free_stock_amount), inline=False)
-    embed.add_field(name="Premium Stock Left", value=str(premium_stock_amount), inline=False)
-    embed.add_field(name="Free Cooldown", value=free_cooldown_text, inline=False)
-    embed.add_field(name="Premium Cooldown", value=premium_cooldown_text, inline=False)
+    embed.add_field(name="📦 Free Stock Left", value=str(free_stock_amount), inline=False)
+    embed.add_field(name="💎 Premium Stock Left", value=str(premium_stock_amount), inline=False)
+    embed.add_field(name="⏳ Free Cooldown", value=free_cooldown_text, inline=False)
+    embed.add_field(name="⏳ Premium Cooldown", value=premium_cooldown_text, inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -1173,13 +1173,13 @@ async def botinfo(interaction: discord.Interaction):
     )
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text=EMBED_FOOTER)
-    embed.add_field(name="Ping", value=f"{ping_ms}ms", inline=False)
-    embed.add_field(name="Free Stock", value=str(free_stock), inline=False)
-    embed.add_field(name="Premium Stock", value=str(premium_stock), inline=False)
-    embed.add_field(name="Free Cooldown", value=f"{FREE_COOLDOWN_SECONDS}s", inline=False)
-    embed.add_field(name="Premium Cooldown", value=f"{PREMIUM_COOLDOWN_SECONDS}s", inline=False)
-    embed.add_field(name="Active Cooldowns", value=str(cooldown_count), inline=False)
-    embed.add_field(name="Blacklisted Users", value=str(blacklist_count), inline=False)
+    embed.add_field(name="📡 Ping", value=f"{ping_ms}ms", inline=False)
+    embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=False)
+    embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=False)
+    embed.add_field(name="⏳ Free Cooldown", value=f"{FREE_COOLDOWN_SECONDS}s", inline=False)
+    embed.add_field(name="⏳ Premium Cooldown", value=f"{PREMIUM_COOLDOWN_SECONDS}s", inline=False)
+    embed.add_field(name="🧠 Active Cooldowns", value=str(cooldown_count), inline=False)
+    embed.add_field(name="🚫 Blacklisted Users", value=str(blacklist_count), inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
@@ -1277,11 +1277,11 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
     )
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
     embed.set_footer(text=EMBED_FOOTER)
-    embed.add_field(name="Username", value=f"{user.display_name} (@{user.name})", inline=False)
-    embed.add_field(name="Premium", value="Yes" if is_user_premium else "No", inline=False)
-    embed.add_field(name="Blacklisted", value="Yes" if is_user_blacklisted else "No", inline=False)
-    embed.add_field(name="Free Cooldown", value=free_text, inline=False)
-    embed.add_field(name="Premium Cooldown", value=premium_text, inline=False)
+    embed.add_field(name="👤 Username", value=f"{user.display_name} (@{user.name})", inline=False)
+    embed.add_field(name="💎 Premium", value="Yes" if is_user_premium else "No", inline=False)
+    embed.add_field(name="🚫 Blacklisted", value="Yes" if is_user_blacklisted else "No", inline=False)
+    embed.add_field(name="⏳ Free Cooldown", value=free_text, inline=False)
+    embed.add_field(name="⏳ Premium Cooldown", value=premium_text, inline=False)
 
     await interaction.followup.send(embed=embed)
     
