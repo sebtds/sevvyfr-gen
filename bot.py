@@ -1395,5 +1395,153 @@ async def removeitem(
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
+class AdminDashboardView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=300)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+            embed = create_embed(
+                "Access Denied",
+                "You are not allowed to use this dashboard.",
+                "error"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return False
+        return True
+
+    def build_dashboard_embed(self):
+        free_stock = len(get_stock())
+        premium_stock = len(get_premium_stock())
+        blacklist_count = len(blacklisted_users)
+        cooldown_count = len(cooldowns)
+        ping_ms = round(client.latency * 1000)
+
+        embed = create_embed(
+            "Admin Dashboard",
+            "Manage the bot with the buttons below.",
+            "admin"
+        )
+        embed.add_field(name="📡 Ping", value=f"{ping_ms}ms", inline=True)
+        embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
+        embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+        embed.add_field(name="🚫 Blacklisted", value=str(blacklist_count), inline=True)
+        embed.add_field(name="⏳ Active Cooldowns", value=str(cooldown_count), inline=True)
+        embed.add_field(name="👑 Owner", value=f"<@{OWNER_ID}>", inline=True)
+        return embed
+
+    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.primary, emoji="🔄", row=0)
+    async def refresh_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = self.build_dashboard_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Clear Cooldowns", style=discord.ButtonStyle.secondary, emoji="🧹", row=0)
+    async def clear_cooldowns_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        cleared_count = len(cooldowns)
+        cooldowns.clear()
+
+        embed = self.build_dashboard_embed()
+        embed.description = f"Cleared **{cleared_count}** cooldown(s)."
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Stock", style=discord.ButtonStyle.secondary, emoji="📦", row=0)
+    async def stock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        free_stock = len(get_stock())
+        premium_stock = len(get_premium_stock())
+
+        embed = create_embed(
+            "Stock Overview",
+            "Current stock amounts.",
+            "stock"
+        )
+        embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
+        embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="Blacklist", style=discord.ButtonStyle.secondary, emoji="🚫", row=1)
+    async def blacklist_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not blacklisted_users:
+            embed = create_embed(
+                "Blacklist",
+                "No users are blacklisted.",
+                "blacklist"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        lines = []
+        for user_id in blacklisted_users:
+            member = interaction.guild.get_member(user_id)
+            if member is None:
+                try:
+                    member = await interaction.guild.fetch_member(user_id)
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                    member = None
+
+            if member:
+                lines.append(f"{member.display_name} (@{member.name})")
+            else:
+                lines.append(f"Unknown User ({user_id})")
+
+        text = "\n".join(lines)
+
+        if len(text) > 1900:
+            embed = create_embed(
+                "Blacklist",
+                f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
+                "blacklist"
+            )
+        else:
+            embed = create_embed(
+                "Blacklist",
+                text,
+                "blacklist"
+            )
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="Bot Info", style=discord.ButtonStyle.success, emoji="ℹ️", row=1)
+    async def botinfo_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        free_stock = len(get_stock())
+        premium_stock = len(get_premium_stock())
+        blacklist_count = len(blacklisted_users)
+        cooldown_count = len(cooldowns)
+        ping_ms = round(client.latency * 1000)
+
+        embed = create_embed(
+            "Bot Info",
+            "Current bot information.",
+            "info"
+        )
+        embed.add_field(name="📡 Ping", value=f"{ping_ms}ms", inline=True)
+        embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
+        embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+        embed.add_field(name="⏳ Free Cooldown", value=f"{FREE_COOLDOWN_SECONDS}s", inline=True)
+        embed.add_field(name="⏳ Premium Cooldown", value=f"{PREMIUM_COOLDOWN_SECONDS}s", inline=True)
+        embed.add_field(name="🚫 Blacklisted", value=str(blacklist_count), inline=True)
+        embed.add_field(name="🧠 Active Cooldowns", value=str(cooldown_count), inline=True)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@client.tree.command(
+    name="admindashboard",
+    description="Open the admin dashboard",
+    guild=discord.Object(id=GUILD_ID)
+)
+async def admindashboard(interaction: discord.Interaction):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    view = AdminDashboardView()
+    embed = view.build_dashboard_embed()
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 client.run(TOKEN)
