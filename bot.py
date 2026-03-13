@@ -269,6 +269,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         )
         
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        embed.add_field(name="🎟 Type", value=stock_type.title(), inline=True)
         embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
         embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
         embed.timestamp = datetime.datetime.utcnow()
