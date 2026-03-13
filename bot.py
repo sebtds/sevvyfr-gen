@@ -5,6 +5,7 @@ import datetime
 
 import discord
 from discord import app_commands
+
 TOKEN = os.getenv("TOKEN")
 
 GUILD_ID = 1478979867088523425
@@ -45,6 +46,36 @@ class MyClient(discord.Client):
 client = MyClient()
 
 
+def create_embed(title: str, description: str, style: str = "info") -> discord.Embed:
+    styles = {
+        "success": "✅",
+        "error": "❌",
+        "warning": "⚠️",
+        "info": "📌",
+        "stock": "📦",
+        "user": "👤",
+        "admin": "🛠️",
+        "cooldown": "⏳",
+        "premium": "💎",
+        "gen": "🎮",
+        "settings": "⚙️",
+        "blacklist": "🚫"
+    }
+
+    emoji = styles.get(style, "📌")
+
+    embed = discord.Embed(
+        title=f"{emoji} {title}",
+        description=description,
+        color=EMBED_COLOR,
+        timestamp=datetime.datetime.now(datetime.timezone.utc)
+    )
+    embed.set_author(name="Sevvy Generator", icon_url=EMBED_THUMBNAIL)
+    embed.set_thumbnail(url=EMBED_THUMBNAIL)
+    embed.set_footer(text=EMBED_FOOTER)
+    return embed
+
+
 def get_stock():
     try:
         with open(STOCK_FILE, "r", encoding="utf-8") as f:
@@ -69,6 +100,7 @@ def get_premium_stock():
 def save_premium_stock(lines):
     with open(PREMIUM_STOCK_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
+
 
 def get_blacklist():
     try:
@@ -126,7 +158,6 @@ blacklisted_users = get_blacklist()
 load_embed_settings()
 
 
-
 def format_time(seconds):
     minutes = seconds // 60
     secs = seconds % 60
@@ -162,6 +193,7 @@ async def on_ready():
     )
     print(f"Logged in as {client.user}")
 
+
 @client.tree.command(
     name="gen",
     description="Generate an account",
@@ -176,13 +208,11 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     await interaction.response.defer(ephemeral=False)
 
     if interaction.user.id in blacklisted_users:
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are blacklisted from using this bot.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are blacklisted from using this bot.",
+            "blacklist"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
@@ -196,13 +226,11 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     if key in cooldowns:
         remaining = int(cooldown_time - (now - cooldowns[key]))
         if remaining > 0:
-            embed = discord.Embed(
-                title="Cooldown Active",
-                description=f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Cooldown Active",
+                f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
+                "cooldown"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -210,13 +238,11 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         stock = get_stock()
 
         if not stock:
-            embed = discord.Embed(
-                title="Out of Stock",
-                description="Free stock is empty.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Out of Stock",
+                "Free stock is empty.",
+                "stock"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -225,26 +251,22 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     else:
         if not isinstance(interaction.user, discord.Member) or not has_premium(interaction.user):
-            embed = discord.Embed(
-                title="Access Denied",
-                description="You need the Premium role to use this.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Access Denied",
+                "You need the Premium role to use this.",
+                "premium"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
         stock = get_premium_stock()
 
         if not stock:
-            embed = discord.Embed(
-                title="Out of Stock",
-                description="Premium stock is empty.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Out of Stock",
+                "Premium stock is empty.",
+                "premium"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.followup.send(embed=embed)
             return
 
@@ -258,34 +280,25 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         free_stock = len(get_stock())
         premium_stock = len(get_premium_stock())
 
-        embed = discord.Embed(
-            title="🎮 Account Generated",
-            description=f"Check your DMs for your {stock_type} account.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Account Generated",
+            f"Check your DMs for your {stock_type} account.",
+            "gen"
         )
-        embed.set_author(
-            name="Sevvy Generator",
-            icon_url=EMBED_THUMBNAIL
-        )
-        
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
         embed.add_field(name="🎟 Type", value=stock_type.title(), inline=True)
         embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
         embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
         embed.add_field(name="👤 Requested By", value=interaction.user.mention, inline=False)
-        embed.timestamp = datetime.datetime.utcnow()
-        embed.set_footer(text=EMBED_FOOTER)
 
         await interaction.followup.send(embed=embed)
 
     except discord.Forbidden:
-        embed = discord.Embed(
-            title="DM Failed",
-            description="I couldn't DM you. Turn on DMs and try again.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "DM Failed",
+            "I couldn't DM you. Turn on DMs and try again.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
 
 
@@ -308,26 +321,22 @@ async def restock(
     items: str
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     new_items = [line.strip() for line in items.splitlines() if line.strip()]
 
     if not new_items:
-        embed = discord.Embed(
-            title="Restock Failed",
-            description="No valid strings were provided.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Restock Failed",
+            "No valid strings were provided.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -336,13 +345,11 @@ async def restock(
         current_stock.extend(new_items)
         save_stock(current_stock)
 
-        embed = discord.Embed(
-            title="Free Stock Restocked",
-            description=f"Added **{len(new_items)}** item(s) to FREE stock.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Free Stock Restocked",
+            f"Added **{len(new_items)}** item(s) to FREE stock.",
+            "stock"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         embed.add_field(name="📥 Added", value=str(len(new_items)), inline=False)
         embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=False)
@@ -352,15 +359,13 @@ async def restock(
         current_stock.extend(new_items)
         save_premium_stock(current_stock)
 
-        embed = discord.Embed(
-            title="Premium Stock Restocked",
-            description=f"Added **{len(new_items)}** item(s) to PREMIUM stock.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Premium Stock Restocked",
+            f"Added **{len(new_items)}** item(s) to PREMIUM stock.",
+            "premium"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
-        embed.add_field(name="Added", value=str(len(new_items)), inline=False)
-        embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
+        embed.add_field(name="📥 Added", value=str(len(new_items)), inline=False)
+        embed.add_field(name="💎 Total Premium Stock", value=str(len(current_stock)), inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -371,27 +376,23 @@ async def restock(
 )
 async def stock(interaction: discord.Interaction):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     free_amount = len(get_stock())
     premium_amount = len(get_premium_stock())
 
-    embed = discord.Embed(
-        title="Stock Info",
-        description="Current stock amounts are below.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Stock Info",
+        "Current stock amounts are below.",
+        "stock"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
-   embed.add_field(name="📦 Free Stock", value=str(free_amount), inline=False)
+    embed.add_field(name="📦 Free Stock", value=str(free_amount), inline=False)
     embed.add_field(name="💎 Premium Stock", value=str(premium_amount), inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
@@ -412,51 +413,47 @@ async def stockview(
     stock_type: app_commands.Choice[str]
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if stock_type.value == "free":
         stock_items = get_stock()
         stock_name = "Free Stock"
+        style = "stock"
     else:
         stock_items = get_premium_stock()
         stock_name = "Premium Stock"
+        style = "premium"
 
     if not stock_items:
-        embed = discord.Embed(
-            title=stock_name,
-            description="Stock is empty.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            stock_name,
+            "Stock is empty.",
+            style
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     text = "\n".join(stock_items)
 
     if len(text) <= 1900:
-        embed = discord.Embed(
-            title=stock_name,
-            description=f"```{text}```",
-            color=EMBED_COLOR
+        embed = create_embed(
+            stock_name,
+            f"```{text}```",
+            style
         )
     else:
-        embed = discord.Embed(
-            title=stock_name,
-            description=f"Stock too long to show.\nTotal items: **{len(stock_items)}**",
-            color=EMBED_COLOR
+        embed = create_embed(
+            stock_name,
+            f"Stock too long to show.\nTotal items: **{len(stock_items)}**",
+            style
         )
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -475,13 +472,11 @@ async def geninfo(interaction: discord.Interaction):
     free_cooldown_text = f"{format_time(free_remaining)} remaining" if free_remaining > 0 else "Ready now"
     premium_cooldown_text = f"{format_time(premium_remaining)} remaining" if premium_remaining > 0 else "Ready now"
 
-    embed = discord.Embed(
-        title="Gen Info",
-        description="Your generator info.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Gen Info",
+        "Your generator info.",
+        "info"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     embed.add_field(name="📦 Free Stock Left", value=str(free_stock_amount), inline=False)
     embed.add_field(name="💎 Premium Stock Left", value=str(premium_stock_amount), inline=False)
     embed.add_field(name="⏳ Free Cooldown", value=free_cooldown_text, inline=False)
@@ -505,33 +500,29 @@ async def clearstock(
     stock_type: app_commands.Choice[str]
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
     if stock_type.value == "free":
         save_stock([])
-        embed = discord.Embed(
-            title="Stock Cleared",
-            description="Free stock has been cleared.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Stock Cleared",
+            "Free stock has been cleared.",
+            "stock"
         )
     else:
         save_premium_stock([])
-        embed = discord.Embed(
-            title="Stock Cleared",
-            description="Premium stock has been cleared.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Stock Cleared",
+            "Premium stock has been cleared.",
+            "premium"
         )
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -554,24 +545,20 @@ async def restockfile(
     file: discord.Attachment
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if not file.filename.endswith(".txt"):
-        embed = discord.Embed(
-            title="Invalid File",
-            description="Only .txt files are allowed.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid File",
+            "Only .txt files are allowed.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -579,36 +566,30 @@ async def restockfile(
         file_bytes = await file.read()
         content = file_bytes.decode("utf-8")
     except UnicodeDecodeError:
-        embed = discord.Embed(
-            title="Invalid File",
-            description="That file is not valid UTF-8 text.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid File",
+            "That file is not valid UTF-8 text.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
     except Exception as e:
-        embed = discord.Embed(
-            title="Read Failed",
-            description=f"Failed to read file: {e}",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Read Failed",
+            f"Failed to read file: {e}",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     new_items = [line.strip() for line in content.splitlines() if line.strip()]
 
     if not new_items:
-        embed = discord.Embed(
-            title="Empty File",
-            description="The file is empty or has no valid lines.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Empty File",
+            "The file is empty or has no valid lines.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -617,26 +598,24 @@ async def restockfile(
         current_stock.extend(new_items)
         save_stock(current_stock)
 
-        embed = discord.Embed(
-            title="Free Stock Restocked",
-            description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Free Stock Restocked",
+            f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
+            "stock"
         )
-        embed.add_field(name="Total Free Stock", value=str(len(current_stock)), inline=False)
+        embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
     else:
         current_stock = get_premium_stock()
         current_stock.extend(new_items)
         save_premium_stock(current_stock)
 
-        embed = discord.Embed(
-            title="Premium Stock Restocked",
-            description=f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Premium Stock Restocked",
+            f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
+            "premium"
         )
-        embed.add_field(name="Total Premium Stock", value=str(len(current_stock)), inline=False)
+        embed.add_field(name="💎 Total Premium Stock", value=str(len(current_stock)), inline=False)
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -661,24 +640,20 @@ async def setcooldown(
     global FREE_COOLDOWN_SECONDS, PREMIUM_COOLDOWN_SECONDS
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if seconds < 0:
-        embed = discord.Embed(
-            title="Invalid Cooldown",
-            description="Cooldown must be 0 or higher.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid Cooldown",
+            "Cooldown must be 0 or higher.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -689,13 +664,11 @@ async def setcooldown(
         PREMIUM_COOLDOWN_SECONDS = seconds
         message = f"Premium cooldown is now **{PREMIUM_COOLDOWN_SECONDS}** seconds."
 
-    embed = discord.Embed(
-        title="Cooldown Updated",
-        description=message,
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Cooldown Updated",
+        message,
+        "settings"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -705,15 +678,14 @@ async def setcooldown(
     guild=discord.Object(id=GUILD_ID)
 )
 async def help_command(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="Bot Commands",
-        description="List of available commands.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Bot Commands",
+        "List of available commands.",
+        "info"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
 
     embed.add_field(
-        name="Generator",
+        name="🎮 Generator",
         value=(
             "`/gen` - Generate an account\n"
             "`/geninfo` - View stock and cooldown info"
@@ -722,7 +694,7 @@ async def help_command(interaction: discord.Interaction):
     )
 
     embed.add_field(
-        name="Stock",
+        name="📦 Stock",
         value=(
             "`/restock` - Add stock by text\n"
             "`/restockfile` - Add stock by .txt file\n"
@@ -737,7 +709,7 @@ async def help_command(interaction: discord.Interaction):
     )
 
     embed.add_field(
-        name="Admin",
+        name="🛠️ Admin",
         value=(
             "`/setcooldown` - Change free or premium cooldown\n"
             "`/resetcooldown` - Reset one user's cooldown\n"
@@ -757,12 +729,11 @@ async def help_command(interaction: discord.Interaction):
     )
 
     embed.add_field(
-        name="Other",
+        name="📌 Other",
         value="`/help` - Show this message",
         inline=False
     )
 
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -774,13 +745,11 @@ async def help_command(interaction: discord.Interaction):
 @app_commands.describe(status_text="The text to show in the bot status")
 async def setstatus(interaction: discord.Interaction, status_text: str):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -789,13 +758,11 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
         activity=discord.Game(name=status_text)
     )
 
-    embed = discord.Embed(
-        title="Status Updated",
-        description=f"Bot status changed to:\n`{status_text}`",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Status Updated",
+        f"Bot status changed to:\n`{status_text}`",
+        "settings"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -807,37 +774,31 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
 @app_commands.describe(user="User to blacklist")
 async def blacklist(interaction: discord.Interaction, user: discord.Member):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if user.id in blacklisted_users:
-        embed = discord.Embed(
-            title="Already Blacklisted",
-            description=f"{user.mention} is already blacklisted.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Already Blacklisted",
+            f"{user.mention} is already blacklisted.",
+            "blacklist"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     blacklisted_users.add(user.id)
     save_blacklist(blacklisted_users)
 
-    embed = discord.Embed(
-        title="User Blacklisted",
-        description=f"{user.mention} has been blacklisted.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "User Blacklisted",
+        f"{user.mention} has been blacklisted.",
+        "blacklist"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -849,37 +810,31 @@ async def blacklist(interaction: discord.Interaction, user: discord.Member):
 @app_commands.describe(user="User to remove from blacklist")
 async def unblacklist(interaction: discord.Interaction, user: discord.Member):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if user.id not in blacklisted_users:
-        embed = discord.Embed(
-            title="Not Blacklisted",
-            description=f"{user.mention} is not blacklisted.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Not Blacklisted",
+            f"{user.mention} is not blacklisted.",
+            "blacklist"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     blacklisted_users.remove(user.id)
     save_blacklist(blacklisted_users)
 
-    embed = discord.Embed(
-        title="User Unblacklisted",
-        description=f"{user.mention} has been removed from the blacklist.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "User Unblacklisted",
+        f"{user.mention} has been removed from the blacklist.",
+        "blacklist"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -892,24 +847,20 @@ async def viewblacklist(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=False)
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
     if not blacklisted_users:
-        embed = discord.Embed(
-            title="Blacklist",
-            description="No users are blacklisted.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Blacklist",
+            "No users are blacklisted.",
+            "blacklist"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
@@ -932,20 +883,18 @@ async def viewblacklist(interaction: discord.Interaction):
     text = "\n".join(lines)
 
     if len(text) > 1900:
-        embed = discord.Embed(
-            title="Blacklist",
-            description=f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Blacklist",
+            f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
+            "blacklist"
         )
     else:
-        embed = discord.Embed(
-            title="Blacklist",
-            description=text,
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Blacklist",
+            text,
+            "blacklist"
         )
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.followup.send(embed=embed)
 
 
@@ -958,13 +907,11 @@ async def clearblacklist(interaction: discord.Interaction):
     global blacklisted_users
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -972,13 +919,11 @@ async def clearblacklist(interaction: discord.Interaction):
     blacklisted_users.clear()
     save_blacklist(blacklisted_users)
 
-    embed = discord.Embed(
-        title="Blacklist Cleared",
-        description=f"Cleared **{cleared_count}** blacklisted user(s).",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Blacklist Cleared",
+        f"Cleared **{cleared_count}** blacklisted user(s).",
+        "blacklist"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1001,24 +946,20 @@ async def removestock(
     amount: int
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if amount <= 0:
-        embed = discord.Embed(
-            title="Invalid Amount",
-            description="Amount must be greater than 0.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid Amount",
+            "Amount must be greater than 0.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -1026,13 +967,11 @@ async def removestock(
         stock = get_stock()
 
         if not stock:
-            embed = discord.Embed(
-                title="Free Stock",
-                description="Free stock is already empty.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Free Stock",
+                "Free stock is already empty.",
+                "stock"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
@@ -1040,24 +979,22 @@ async def removestock(
         stock = stock[removed_amount:]
         save_stock(stock)
 
-        embed = discord.Embed(
-            title="Free Stock Updated",
-            description=f"Removed **{removed_amount}** item(s) from free stock.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Free Stock Updated",
+            f"Removed **{removed_amount}** item(s) from free stock.",
+            "stock"
         )
-        embed.add_field(name="Free Stock Left", value=str(len(stock)), inline=False)
+        embed.add_field(name="📦 Free Stock Left", value=str(len(stock)), inline=False)
 
     else:
         stock = get_premium_stock()
 
         if not stock:
-            embed = discord.Embed(
-                title="Premium Stock",
-                description="Premium stock is already empty.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Premium Stock",
+                "Premium stock is already empty.",
+                "premium"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
@@ -1065,15 +1002,13 @@ async def removestock(
         stock = stock[removed_amount:]
         save_premium_stock(stock)
 
-        embed = discord.Embed(
-            title="Premium Stock Updated",
-            description=f"Removed **{removed_amount}** item(s) from premium stock.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Premium Stock Updated",
+            f"Removed **{removed_amount}** item(s) from premium stock.",
+            "premium"
         )
-        embed.add_field(name="Premium Stock Left", value=str(len(stock)), inline=False)
+        embed.add_field(name="💎 Premium Stock Left", value=str(len(stock)), inline=False)
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1096,13 +1031,11 @@ async def resetcooldown(
     stock_type: app_commands.Choice[str]
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -1114,13 +1047,11 @@ async def resetcooldown(
     else:
         message = f"{user.mention} had no active {stock_type.value} cooldown."
 
-    embed = discord.Embed(
-        title="Cooldown Reset",
-        description=message,
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Cooldown Reset",
+        message,
+        "cooldown"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1131,26 +1062,22 @@ async def resetcooldown(
 )
 async def clearcooldowns(interaction: discord.Interaction):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     cleared_count = len(cooldowns)
     cooldowns.clear()
 
-    embed = discord.Embed(
-        title="Cooldowns Cleared",
-        description=f"Cleared **{cleared_count}** active cooldown(s).",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Cooldowns Cleared",
+        f"Cleared **{cleared_count}** active cooldown(s).",
+        "cooldown"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1166,13 +1093,11 @@ async def botinfo(interaction: discord.Interaction):
     cooldown_count = len(cooldowns)
     ping_ms = round(client.latency * 1000)
 
-    embed = discord.Embed(
-        title="Bot Info",
-        description="Current bot information.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Bot Info",
+        "Current bot information.",
+        "info"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     embed.add_field(name="📡 Ping", value=f"{ping_ms}ms", inline=False)
     embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=False)
     embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=False)
@@ -1199,13 +1124,11 @@ async def removeduplicates(
     stock_type: app_commands.Choice[str]
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -1216,12 +1139,12 @@ async def removeduplicates(
         removed_count = original_count - len(cleaned_stock)
         save_stock(cleaned_stock)
 
-        embed = discord.Embed(
-            title="Free Stock Cleaned",
-            description=f"Removed **{removed_count}** duplicate item(s).",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Free Stock Cleaned",
+            f"Removed **{removed_count}** duplicate item(s).",
+            "stock"
         )
-        embed.add_field(name="Free Stock Left", value=str(len(cleaned_stock)), inline=False)
+        embed.add_field(name="📦 Free Stock Left", value=str(len(cleaned_stock)), inline=False)
 
     else:
         stock = get_premium_stock()
@@ -1230,15 +1153,13 @@ async def removeduplicates(
         removed_count = original_count - len(cleaned_stock)
         save_premium_stock(cleaned_stock)
 
-        embed = discord.Embed(
-            title="Premium Stock Cleaned",
-            description=f"Removed **{removed_count}** duplicate item(s).",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Premium Stock Cleaned",
+            f"Removed **{removed_count}** duplicate item(s).",
+            "premium"
         )
-        embed.add_field(name="Premium Stock Left", value=str(len(cleaned_stock)), inline=False)
+        embed.add_field(name="💎 Premium Stock Left", value=str(len(cleaned_stock)), inline=False)
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1252,13 +1173,11 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
     await interaction.response.defer(ephemeral=False)
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
@@ -1270,13 +1189,11 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
     free_text = f"{format_time(free_remaining)} remaining" if free_remaining > 0 else "Ready now"
     premium_text = f"{format_time(premium_remaining)} remaining" if premium_remaining > 0 else "Ready now"
 
-    embed = discord.Embed(
-        title="User Info",
-        description=f"Info for {user.mention}",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "User Info",
+        f"Info for {user.mention}",
+        "user"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     embed.add_field(name="👤 Username", value=f"{user.display_name} (@{user.name})", inline=False)
     embed.add_field(name="💎 Premium", value="Yes" if is_user_premium else "No", inline=False)
     embed.add_field(name="🚫 Blacklisted", value="Yes" if is_user_blacklisted else "No", inline=False)
@@ -1284,7 +1201,8 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
     embed.add_field(name="⏳ Premium Cooldown", value=premium_text, inline=False)
 
     await interaction.followup.send(embed=embed)
-    
+
+
 @client.tree.command(
     name="setthumbnail",
     description="Change the embed thumbnail URL",
@@ -1295,37 +1213,32 @@ async def setthumbnail(interaction: discord.Interaction, url: str):
     global EMBED_THUMBNAIL
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     if not (url.startswith("http://") or url.startswith("https://")):
-        embed = discord.Embed(
-            title="Invalid URL",
-            description="Thumbnail URL must start with http:// or https://",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid URL",
+            "Thumbnail URL must start with http:// or https://",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     EMBED_THUMBNAIL = url
     save_embed_settings()
 
-    embed = discord.Embed(
-        title="Thumbnail Updated",
-        description="The embed thumbnail has been updated.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Thumbnail Updated",
+        "The embed thumbnail has been updated.",
+        "settings"
     )
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1339,26 +1252,22 @@ async def setfooter(interaction: discord.Interaction, text: str):
     global EMBED_FOOTER
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     EMBED_FOOTER = text
     save_embed_settings()
 
-    embed = discord.Embed(
-        title="Footer Updated",
-        description=f"New footer:\n`{EMBED_FOOTER}`",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Footer Updated",
+        f"New footer:\n`{EMBED_FOOTER}`",
+        "settings"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1372,52 +1281,44 @@ async def setembedcolor(interaction: discord.Interaction, hex_color: str):
     global EMBED_COLOR
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     hex_color = hex_color.strip().replace("#", "")
 
     if len(hex_color) != 6:
-        embed = discord.Embed(
-            title="Invalid Color",
-            description="Hex color must be 6 characters long.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid Color",
+            "Hex color must be 6 characters long.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     try:
         color_value = int(hex_color, 16)
     except ValueError:
-        embed = discord.Embed(
-            title="Invalid Color",
-            description="That is not a valid hex color.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Invalid Color",
+            "That is not a valid hex color.",
+            "warning"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     EMBED_COLOR = discord.Color(color_value)
     save_embed_settings()
 
-    embed = discord.Embed(
-        title="Embed Color Updated",
-        description=f"New embed color set to `#{hex_color.lower()}`.",
-        color=EMBED_COLOR
+    embed = create_embed(
+        "Embed Color Updated",
+        f"New embed color set to `#{hex_color.lower()}`.",
+        "settings"
     )
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
@@ -1440,13 +1341,11 @@ async def removeitem(
     item: str
 ):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = discord.Embed(
-            title="Access Denied",
-            description="You are not allowed to use this command.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
         )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
@@ -1454,52 +1353,46 @@ async def removeitem(
         stock = get_stock()
 
         if item not in stock:
-            embed = discord.Embed(
-                title="Item Not Found",
-                description="That item was not found in free stock.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Item Not Found",
+                "That item was not found in free stock.",
+                "warning"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         stock.remove(item)
         save_stock(stock)
 
-        embed = discord.Embed(
-            title="Item Removed",
-            description="Removed item from free stock.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Item Removed",
+            "Removed item from free stock.",
+            "stock"
         )
-        embed.add_field(name="Free Stock Left", value=str(len(stock)), inline=False)
+        embed.add_field(name="📦 Free Stock Left", value=str(len(stock)), inline=False)
 
     else:
         stock = get_premium_stock()
 
         if item not in stock:
-            embed = discord.Embed(
-                title="Item Not Found",
-                description="That item was not found in premium stock.",
-                color=EMBED_COLOR
+            embed = create_embed(
+                "Item Not Found",
+                "That item was not found in premium stock.",
+                "warning"
             )
-            embed.set_thumbnail(url=EMBED_THUMBNAIL)
-            embed.set_footer(text=EMBED_FOOTER)
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         stock.remove(item)
         save_premium_stock(stock)
 
-        embed = discord.Embed(
-            title="Item Removed",
-            description="Removed item from premium stock.",
-            color=EMBED_COLOR
+        embed = create_embed(
+            "Item Removed",
+            "Removed item from premium stock.",
+            "premium"
         )
-        embed.add_field(name="Premium Stock Left", value=str(len(stock)), inline=False)
+        embed.add_field(name="💎 Premium Stock Left", value=str(len(stock)), inline=False)
 
-    embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    embed.set_footer(text=EMBED_FOOTER)
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
