@@ -1,9 +1,10 @@
-import json
 import os
+import json
 import time
+import datetime
+
 import discord
 from discord import app_commands
-
 TOKEN = os.getenv("TOKEN")
 
 GUILD_ID = 1478979867088523425
@@ -161,7 +162,6 @@ async def on_ready():
     )
     print(f"Logged in as {client.user}")
 
-
 @client.tree.command(
     name="gen",
     description="Generate an account",
@@ -255,24 +255,26 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         await interaction.user.send(f"Your generated R6 account:\n`{item}`")
         cooldowns[key] = now
 
+        free_stock = len(get_stock())
+        premium_stock = len(get_premium_stock())
+
         embed = discord.Embed(
-    title="🎮 Account Generated",
-    description="Check your DMs for your account.",
-    color=EMBED_COLOR
-)
+            title="🎮 Account Generated",
+            description=f"Check your DMs for your {stock_type} account.",
+            color=EMBED_COLOR
+        )
+        embed.set_author(
+            name="Sevvy Generator",
+            icon_url=EMBED_THUMBNAIL
+        )
+        
+        embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
+        embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_footer(text=EMBED_FOOTER)
 
-embed.set_author(
-    name="Sevvy Generator",
-    icon_url=EMBED_THUMBNAIL
-)
-
-embed.set_thumbnail(url=interaction.user.display_avatar.url)
-
-embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
-embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
-
-embed.timestamp = datetime.datetime.utcnow()
-embed.set_footer(text=EMBED_FOOTER)
+        await interaction.followup.send(embed=embed)
 
     except discord.Forbidden:
         embed = discord.Embed(
