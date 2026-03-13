@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import discord
@@ -13,13 +14,17 @@ PREMIUM_STOCK_FILE = "premium_stock.txt"
 
 BLACKLIST_FILE = "blacklist.txt"
 STOCK_FILE = "stock.txt"
-
+EMBED_SETTINGS_FILE = "embed_settings.json"
 FREE_COOLDOWN_SECONDS = 300
 PREMIUM_COOLDOWN_SECONDS = 120
 
-EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
-EMBED_COLOR = discord.Color.red()
-EMBED_FOOTER = "Powered by @sevvyfr"
+DEFAULT_EMBED_THUMBNAIL = "https://i1.sndcdn.com/artworks-S9Zqk2YaTDjBEdlI-WxqcPw-t500x500.jpg"
+DEFAULT_EMBED_COLOR = 0xED4245
+DEFAULT_EMBED_FOOTER = "Powered by @sevvyfr"
+
+EMBED_THUMBNAIL = DEFAULT_EMBED_THUMBNAIL
+EMBED_COLOR = discord.Color(DEFAULT_EMBED_COLOR)
+EMBED_FOOTER = DEFAULT_EMBED_FOOTER
 
 cooldowns = {}
 
@@ -64,7 +69,6 @@ def save_premium_stock(lines):
     with open(PREMIUM_STOCK_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
-
 def get_blacklist():
     try:
         with open(BLACKLIST_FILE, "r", encoding="utf-8") as f:
@@ -78,12 +82,48 @@ def get_blacklist():
         return set()
 
 
+def load_embed_settings():
+    global EMBED_THUMBNAIL, EMBED_COLOR, EMBED_FOOTER
+
+    try:
+        with open(EMBED_SETTINGS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        color_value = data.get("color", DEFAULT_EMBED_COLOR)
+        footer_value = data.get("footer", DEFAULT_EMBED_FOOTER)
+        thumbnail_value = data.get("thumbnail", DEFAULT_EMBED_THUMBNAIL)
+
+        EMBED_COLOR = discord.Color(int(color_value))
+        EMBED_FOOTER = str(footer_value)
+        EMBED_THUMBNAIL = str(thumbnail_value)
+
+    except (FileNotFoundError, json.JSONDecodeError, ValueError, TypeError):
+        EMBED_COLOR = discord.Color(DEFAULT_EMBED_COLOR)
+        EMBED_FOOTER = DEFAULT_EMBED_FOOTER
+        EMBED_THUMBNAIL = DEFAULT_EMBED_THUMBNAIL
+
+
+def save_embed_settings():
+    with open(EMBED_SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "color": EMBED_COLOR.value,
+                "footer": EMBED_FOOTER,
+                "thumbnail": EMBED_THUMBNAIL
+            },
+            f,
+            indent=4
+        )
+
+
 def save_blacklist(user_ids):
     with open(BLACKLIST_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(str(user_id) for user_id in user_ids))
 
 
 blacklisted_users = get_blacklist()
+load_embed_settings()
+
 
 
 def format_time(seconds):
@@ -216,13 +256,23 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         cooldowns[key] = now
 
         embed = discord.Embed(
-            title="Account Generated",
-            description=f"Check your DMs for your {stock_type} account.",
-            color=EMBED_COLOR
-        )
-        embed.set_thumbnail(url=EMBED_THUMBNAIL)
-        embed.set_footer(text=EMBED_FOOTER)
-        await interaction.followup.send(embed=embed)
+    title="🎮 Account Generated",
+    description="Check your DMs for your account.",
+    color=EMBED_COLOR
+)
+
+embed.set_author(
+    name="Sevvy Generator",
+    icon_url=EMBED_THUMBNAIL
+)
+
+embed.set_thumbnail(url=interaction.user.display_avatar.url)
+
+embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
+embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+
+embed.timestamp = datetime.datetime.utcnow()
+embed.set_footer(text=EMBED_FOOTER)
 
     except discord.Forbidden:
         embed = discord.Embed(
@@ -1230,8 +1280,7 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
     embed.add_field(name="Premium Cooldown", value=premium_text, inline=False)
 
     await interaction.followup.send(embed=embed)
-
-
+    
 @client.tree.command(
     name="setthumbnail",
     description="Change the embed thumbnail URL",
@@ -1264,6 +1313,7 @@ async def setthumbnail(interaction: discord.Interaction, url: str):
         return
 
     EMBED_THUMBNAIL = url
+    save_embed_settings()
 
     embed = discord.Embed(
         title="Thumbnail Updated",
@@ -1296,6 +1346,7 @@ async def setfooter(interaction: discord.Interaction, text: str):
         return
 
     EMBED_FOOTER = text
+    save_embed_settings()
 
     embed = discord.Embed(
         title="Footer Updated",
@@ -1354,6 +1405,7 @@ async def setembedcolor(interaction: discord.Interaction, hex_color: str):
         return
 
     EMBED_COLOR = discord.Color(color_value)
+    save_embed_settings()
 
     embed = discord.Embed(
         title="Embed Color Updated",
