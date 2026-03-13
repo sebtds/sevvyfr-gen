@@ -768,163 +768,175 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
 
 @client.tree.command(
     name="blacklist",
-    description="Blacklist a user from using the generator",
+    description="Manage the blacklist",
     guild=discord.Object(id=GUILD_ID)
 )
-@app_commands.describe(user="User to blacklist")
-async def blacklist(interaction: discord.Interaction, user: discord.Member):
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    if user.id in blacklisted_users:
-        embed = create_embed(
-            "Already Blacklisted",
-            f"{user.mention} is already blacklisted.",
-            "blacklist"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    blacklisted_users.add(user.id)
-    save_blacklist(blacklisted_users)
-
-    embed = create_embed(
-        "User Blacklisted",
-        f"{user.mention} has been blacklisted.",
-        "blacklist"
-    )
-    await interaction.response.send_message(embed=embed, ephemeral=False)
-
-
-@client.tree.command(
-    name="unblacklist",
-    description="Remove a user from the blacklist",
-    guild=discord.Object(id=GUILD_ID)
+@app_commands.describe(
+    action="What to do",
+    user="User to add/remove from blacklist"
 )
-@app_commands.describe(user="User to remove from blacklist")
-async def unblacklist(interaction: discord.Interaction, user: discord.Member):
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    if user.id not in blacklisted_users:
-        embed = create_embed(
-            "Not Blacklisted",
-            f"{user.mention} is not blacklisted.",
-            "blacklist"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    blacklisted_users.remove(user.id)
-    save_blacklist(blacklisted_users)
-
-    embed = create_embed(
-        "User Unblacklisted",
-        f"{user.mention} has been removed from the blacklist.",
-        "blacklist"
-    )
-    await interaction.response.send_message(embed=embed, ephemeral=False)
-
-
-@client.tree.command(
-    name="viewblacklist",
-    description="View all blacklisted users",
-    guild=discord.Object(id=GUILD_ID)
-)
-async def viewblacklist(interaction: discord.Interaction):
+@app_commands.choices(action=[
+    app_commands.Choice(name="Add", value="add"),
+    app_commands.Choice(name="Remove", value="remove"),
+    app_commands.Choice(name="View", value="view"),
+    app_commands.Choice(name="Clear", value="clear")
+])
+async def blacklist(
+    interaction: discord.Interaction,
+    action: app_commands.Choice[str],
+    user: discord.Member | None = None
+):
     await interaction.response.defer(ephemeral=False)
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
-    if not blacklisted_users:
-        embed = create_embed(
-            "Blacklist",
-            "No users are blacklisted.",
-            "blacklist"
+    # ADD
+    if action.value == "add":
+        if user is None:
+            embed = discord.Embed(
+                title="Missing User",
+                description="You must provide a user to blacklist.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.followup.send(embed=embed)
+            return
+
+        if user.id in blacklisted_users:
+            embed = discord.Embed(
+                title="Already Blacklisted",
+                description=f"{user.mention} is already blacklisted.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.followup.send(embed=embed)
+            return
+
+        blacklisted_users.add(user.id)
+        save_blacklist(blacklisted_users)
+
+        embed = discord.Embed(
+            title="User Blacklisted",
+            description=f"{user.mention} has been blacklisted.",
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.followup.send(embed=embed)
         return
 
-    lines = []
+    # REMOVE
+    if action.value == "remove":
+        if user is None:
+            embed = discord.Embed(
+                title="Missing User",
+                description="You must provide a user to remove from the blacklist.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.followup.send(embed=embed)
+            return
 
-    for user_id in blacklisted_users:
-        member = interaction.guild.get_member(user_id)
+        if user.id not in blacklisted_users:
+            embed = discord.Embed(
+                title="Not Blacklisted",
+                description=f"{user.mention} is not blacklisted.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.followup.send(embed=embed)
+            return
 
-        if member is None:
-            try:
-                member = await interaction.guild.fetch_member(user_id)
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-                member = None
+        blacklisted_users.remove(user.id)
+        save_blacklist(blacklisted_users)
 
-        if member:
-            lines.append(f"{member.display_name} (@{member.name})")
+        embed = discord.Embed(
+            title="User Unblacklisted",
+            description=f"{user.mention} has been removed from the blacklist.",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.followup.send(embed=embed)
+        return
+
+    # VIEW
+    if action.value == "view":
+        if not blacklisted_users:
+            embed = discord.Embed(
+                title="Blacklist",
+                description="No users are blacklisted.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.followup.send(embed=embed)
+            return
+
+        lines = []
+
+        for user_id in blacklisted_users:
+            member = interaction.guild.get_member(user_id)
+
+            if member is None:
+                try:
+                    member = await interaction.guild.fetch_member(user_id)
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                    member = None
+
+            if member:
+                lines.append(f"{member.display_name} (@{member.name})")
+            else:
+                lines.append(f"Unknown User ({user_id})")
+
+        text = "\n".join(lines)
+
+        if len(text) > 1900:
+            embed = discord.Embed(
+                title="Blacklist",
+                description=f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
+                color=EMBED_COLOR
+            )
         else:
-            lines.append(f"Unknown User ({user_id})")
+            embed = discord.Embed(
+                title="Blacklist",
+                description=text,
+                color=EMBED_COLOR
+            )
 
-    text = "\n".join(lines)
-
-    if len(text) > 1900:
-        embed = create_embed(
-            "Blacklist",
-            f"Too many users to show.\nTotal blacklisted: **{len(blacklisted_users)}**",
-            "blacklist"
-        )
-    else:
-        embed = create_embed(
-            "Blacklist",
-            text,
-            "blacklist"
-        )
-
-    await interaction.followup.send(embed=embed)
-
-
-@client.tree.command(
-    name="clearblacklist",
-    description="Clear the entire blacklist",
-    guild=discord.Object(id=GUILD_ID)
-)
-async def clearblacklist(interaction: discord.Interaction):
-    global blacklisted_users
-
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.followup.send(embed=embed)
         return
 
-    cleared_count = len(blacklisted_users)
-    blacklisted_users.clear()
-    save_blacklist(blacklisted_users)
+    # CLEAR
+    if action.value == "clear":
+        cleared_count = len(blacklisted_users)
+        blacklisted_users.clear()
+        save_blacklist(blacklisted_users)
 
-    embed = create_embed(
-        "Blacklist Cleared",
-        f"Cleared **{cleared_count}** blacklisted user(s).",
-        "blacklist"
-    )
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+        embed = discord.Embed(
+            title="Blacklist Cleared",
+            description=f"Cleared **{cleared_count}** blacklisted user(s).",
+            color=EMBED_COLOR
+        )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
+        await interaction.followup.send(embed=embed)
+        return
 
 
 @client.tree.command(
