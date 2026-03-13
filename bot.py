@@ -1214,123 +1214,106 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
 
     await interaction.followup.send(embed=embed)
 
-
 @client.tree.command(
-    name="setthumbnail",
-    description="Change the embed thumbnail URL",
+    name="embedsettings",
+    description="Manage embed settings",
     guild=discord.Object(id=GUILD_ID)
 )
-@app_commands.describe(url="Direct image URL for the thumbnail")
-async def setthumbnail(interaction: discord.Interaction, url: str):
-    global EMBED_THUMBNAIL
+@app_commands.describe(
+    color="Hex color like #ff69b4",
+    footer="New footer text",
+    thumbnail="Direct image URL"
+)
+async def embedsettings(
+    interaction: discord.Interaction,
+    color: str | None = None,
+    footer: str | None = None,
+    thumbnail: str | None = None
+):
+    global EMBED_COLOR, EMBED_FOOTER, EMBED_THUMBNAIL
 
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
+        embed = discord.Embed(
+            title="Access Denied",
+            description="You are not allowed to use this command.",
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-    if not (url.startswith("http://") or url.startswith("https://")):
-        embed = create_embed(
-            "Invalid URL",
-            "Thumbnail URL must start with http:// or https://",
-            "warning"
+    if color is None and footer is None and thumbnail is None:
+        embed = discord.Embed(
+            title="Embed Settings",
+            description="Provide at least one setting to update.",
+            color=EMBED_COLOR
         )
+        embed.add_field(name="Current Color", value=f"`#{EMBED_COLOR.value:06x}`", inline=False)
+        embed.add_field(name="Current Footer", value=EMBED_FOOTER, inline=False)
+        embed.add_field(name="Current Thumbnail", value=EMBED_THUMBNAIL, inline=False)
+        embed.set_thumbnail(url=EMBED_THUMBNAIL)
+        embed.set_footer(text=EMBED_FOOTER)
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-    EMBED_THUMBNAIL = url
+    if color is not None:
+        clean_color = color.strip().replace("#", "")
+        if len(clean_color) != 6:
+            embed = discord.Embed(
+                title="Invalid Color",
+                description="Hex color must be 6 characters long.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+        try:
+            color_value = int(clean_color, 16)
+            EMBED_COLOR = discord.Color(color_value)
+        except ValueError:
+            embed = discord.Embed(
+                title="Invalid Color",
+                description="That is not a valid hex color.",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+    if footer is not None:
+        EMBED_FOOTER = footer
+
+    if thumbnail is not None:
+        if not (thumbnail.startswith("http://") or thumbnail.startswith("https://")):
+            embed = discord.Embed(
+                title="Invalid URL",
+                description="Thumbnail URL must start with http:// or https://",
+                color=EMBED_COLOR
+            )
+            embed.set_thumbnail(url=EMBED_THUMBNAIL)
+            embed.set_footer(text=EMBED_FOOTER)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
+
+        EMBED_THUMBNAIL = thumbnail
+
     save_embed_settings()
 
-    embed = create_embed(
-        "Thumbnail Updated",
-        "The embed thumbnail has been updated.",
-        "settings"
+    embed = discord.Embed(
+        title="Embed Settings Updated",
+        description="Your embed settings have been updated.",
+        color=EMBED_COLOR
     )
+    embed.add_field(name="Color", value=f"`#{EMBED_COLOR.value:06x}`", inline=False)
+    embed.add_field(name="Footer", value=EMBED_FOOTER, inline=False)
+    embed.add_field(name="Thumbnail", value=EMBED_THUMBNAIL, inline=False)
     embed.set_thumbnail(url=EMBED_THUMBNAIL)
-    await interaction.response.send_message(embed=embed, ephemeral=False)
+    embed.set_footer(text=EMBED_FOOTER)
 
-
-@client.tree.command(
-    name="setfooter",
-    description="Change the embed footer text",
-    guild=discord.Object(id=GUILD_ID)
-)
-@app_commands.describe(text="New footer text")
-async def setfooter(interaction: discord.Interaction, text: str):
-    global EMBED_FOOTER
-
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    EMBED_FOOTER = text
-    save_embed_settings()
-
-    embed = create_embed(
-        "Footer Updated",
-        f"New footer:\n`{EMBED_FOOTER}`",
-        "settings"
-    )
-    await interaction.response.send_message(embed=embed, ephemeral=False)
-
-
-@client.tree.command(
-    name="setembedcolor",
-    description="Change the embed color using a hex code",
-    guild=discord.Object(id=GUILD_ID)
-)
-@app_commands.describe(hex_color="Example: #ff0000 or ff0000")
-async def setembedcolor(interaction: discord.Interaction, hex_color: str):
-    global EMBED_COLOR
-
-    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
-        embed = create_embed(
-            "Access Denied",
-            "You are not allowed to use this command.",
-            "error"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    hex_color = hex_color.strip().replace("#", "")
-
-    if len(hex_color) != 6:
-        embed = create_embed(
-            "Invalid Color",
-            "Hex color must be 6 characters long.",
-            "warning"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    try:
-        color_value = int(hex_color, 16)
-    except ValueError:
-        embed = create_embed(
-            "Invalid Color",
-            "That is not a valid hex color.",
-            "warning"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    EMBED_COLOR = discord.Color(color_value)
-    save_embed_settings()
-
-    embed = create_embed(
-        "Embed Color Updated",
-        f"New embed color set to `#{hex_color.lower()}`.",
-        "settings"
-    )
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
