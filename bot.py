@@ -1401,7 +1401,7 @@ class AdminDashboardView(discord.ui.View):
                 "You are not allowed to use this dashboard.",
                 "error"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return False
         return True
 
@@ -1453,7 +1453,7 @@ class AdminDashboardView(discord.ui.View):
         embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
         embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     @discord.ui.button(label="Blacklist", style=discord.ButtonStyle.secondary, emoji="🚫", row=1)
     async def blacklist_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1463,7 +1463,7 @@ class AdminDashboardView(discord.ui.View):
                 "No users are blacklisted.",
                 "blacklist"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
             return
 
         lines = []
@@ -1495,7 +1495,7 @@ class AdminDashboardView(discord.ui.View):
                 "blacklist"
             )
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     @discord.ui.button(label="Bot Info", style=discord.ButtonStyle.success, emoji="ℹ️", row=1)
     async def botinfo_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1518,7 +1518,7 @@ class AdminDashboardView(discord.ui.View):
         embed.add_field(name="🚫 Blacklisted", value=str(blacklist_count), inline=True)
         embed.add_field(name="🧠 Active Cooldowns", value=str(cooldown_count), inline=True)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
 @client.tree.command(
     name="admindashboard",
@@ -1532,11 +1532,11 @@ async def admindashboard(interaction: discord.Interaction):
             "You are not allowed to use this command.",
             "error"
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
     view = AdminDashboardView()
     embed = view.build_dashboard_embed()
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
 
 client.run(TOKEN)
