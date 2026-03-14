@@ -173,6 +173,21 @@ def has_permission(member: discord.Member) -> bool:
 def has_premium(member: discord.Member) -> bool:
     return any(role.id == PREMIUM_ROLE_ID for role in member.roles)
 
+def clean_new_items(existing_stock, new_items):
+    existing_set = set(existing_stock)
+    cleaned = []
+    skipped_duplicates = 0
+
+    for item in new_items:
+        if item in existing_set:
+            skipped_duplicates += 1
+            continue
+
+        existing_set.add(item)
+        cleaned.append(item)
+
+    return cleaned, skipped_duplicates
+
 
 def get_cooldown_remaining(user_id: int, stock_type: str) -> int:
     key = (user_id, stock_type)
@@ -340,33 +355,36 @@ async def restock(
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-    if stock_type.value == "free":
-        current_stock = get_stock()
-        current_stock.extend(new_items)
-        save_stock(current_stock)
+   if stock_type.value == "free":
+    current_stock = get_stock()
+    cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
+    current_stock.extend(cleaned_items)
+    save_stock(current_stock)
 
-        embed = create_embed(
-            "Free Stock Restocked",
-            f"Added **{len(new_items)}** item(s) to FREE stock.",
-            "stock"
-        )
-        embed.add_field(name="📥 Added", value=str(len(new_items)), inline=False)
-        embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-
+    embed = create_embed(
+        "Free Stock Restocked",
+        f"Added **{len(cleaned_items)}** item(s) to FREE stock.",
+        "stock"
+    )
+    embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
+    embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
+    embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
+       
     else:
-        current_stock = get_premium_stock()
-        current_stock.extend(new_items)
-        save_premium_stock(current_stock)
+        if stock_type.value == "premium":
+    current_stock = get_stock()
+    cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
+    current_stock.extend(cleaned_items)
+    save_stock(current_stock)
 
-        embed = create_embed(
-            "Premium Stock Restocked",
-            f"Added **{len(new_items)}** item(s) to PREMIUM stock.",
-            "premium"
-        )
-        embed.add_field(name="📥 Added", value=str(len(new_items)), inline=False)
-        embed.add_field(name="💎 Total Premium Stock", value=str(len(current_stock)), inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+    embed = create_embed(
+        "premium Stock Restocked",
+        f"Added **{len(cleaned_items)}** item(s) to premium stock.",
+        "stock"
+    )
+    embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
+    embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
+    embed.add_field(name="📦 Total premium Stock", value=str(len(current_stock)), inline=False)
 
 
 @client.tree.command(
