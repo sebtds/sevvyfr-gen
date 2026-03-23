@@ -13,15 +13,16 @@ if not TOKEN:
 DATA_DIR = "/data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
-GUILD_ID = 1478979867088523425
+GUILD_ID = 
 OWNER_ID = 742144460552536106
-ADMIN_ROLE_ID = 1478983511380725850
-PREMIUM_ROLE_ID = 1481062565810536631
+ADMIN_ROLE_ID = 
+PREMIUM_ROLE_ID = 
 
 BLACKLIST_FILE = f"{DATA_DIR}/blacklist.txt"
 STOCK_FILE = f"{DATA_DIR}/stock.txt"
 PREMIUM_STOCK_FILE = f"{DATA_DIR}/premium_stock.txt"
 EMBED_SETTINGS_FILE = f"{DATA_DIR}/embed_settings.json"
+SERVER_CONFIG_FILE = f"{DATA_DIR}/server_config.json"
 FREE_COOLDOWN_SECONDS = 300
 PREMIUM_COOLDOWN_SECONDS = 120
 
@@ -44,13 +45,40 @@ class MyClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        guild = discord.Object(id=GUILD_ID)
-        await self.tree.sync(guild=guild)
+        await self.tree.sync()
 
 
 client = MyClient()
 
 
+def load_server_configs():
+    try:
+        with open(SERVER_CONFIG_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_server_configs(data):
+    with open(SERVER_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
+
+
+def get_guild_config(guild_id: int):
+    configs = load_server_configs()
+    return configs.get(str(guild_id), {})
+
+
+def update_guild_config(guild_id: int, key: str, value):
+    configs = load_server_configs()
+    guild_id_str = str(guild_id)
+
+    if guild_id_str not in configs:
+        configs[guild_id_str] = {}
+
+    configs[guild_id_str][key] = value
+    save_server_configs(configs)
+    
 def create_embed(title: str, description: str, style: str = "info") -> discord.Embed:
     styles = {
         "success": "✅",
@@ -105,6 +133,33 @@ def get_premium_stock():
 def save_premium_stock(lines):
     with open(PREMIUM_STOCK_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
+        
+def get_log_channel_id(guild_id: int):
+    return get_guild_config(guild_id).get("log_channel_id")
+
+def get_log_channel_id(guild_id: int):
+    return get_guild_config(guild_id).get("log_channel_id")
+
+async def send_log(guild: discord.Guild, title: str, description: str, style: str = "info"):
+    channel_id = get_log_channel_id(guild.id)
+    if not channel_id:
+        return
+
+    channel = guild.get_channel(channel_id)
+    if channel is None:
+        try:
+            channel = await guild.fetch_channel(channel_id)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return
+
+    if not isinstance(channel, discord.TextChannel):
+        return
+
+    embed = create_embed(title, description, style)
+    try:
+        await channel.send(embed=embed)
+    except discord.HTTPException:
+        pass
 
 
 def get_blacklist():
@@ -168,15 +223,23 @@ def format_time(seconds):
     secs = seconds % 60
     return f"{minutes}m {secs}s"
 
-
 def has_permission(member: discord.Member) -> bool:
     if member.id == OWNER_ID:
         return True
-    return any(role.id == ADMIN_ROLE_ID for role in member.roles)
+
+    config = get_guild_config(member.guild.id)
+    admin_role_id = config.get("admin_role_id", ADMIN_ROLE_ID)
+
+    return any(role.id == admin_role_id for role in member.roles)
 
 
 def has_premium(member: discord.Member) -> bool:
-    return any(role.id == PREMIUM_ROLE_ID for role in member.roles)
+    config = get_guild_config(member.guild.id)
+    premium_role_id = config.get("premium_role_id", PREMIUM_ROLE_ID)
+
+    return any(role.id == premium_role_id for role in member.roles)
+
+
 
 def clean_new_items(existing_stock, new_items):
     existing_set = set(existing_stock)
@@ -217,7 +280,7 @@ async def on_ready():
 @client.tree.command(
     name="gen",
     description="Generate an account",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(type="Choose stock type")
 @app_commands.choices(type=[
@@ -324,7 +387,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 @client.tree.command(
     name="restock",
     description="Add items to free or premium stock",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(
     stock_type="Choose which stock to add to",
@@ -396,7 +459,7 @@ async def restock(
 @client.tree.command(
     name="stock",
     description="See how many accounts are left in stock",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 async def stock(interaction: discord.Interaction):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
@@ -484,7 +547,7 @@ async def stockview(
 @client.tree.command(
     name="geninfo",
     description="View stock and cooldown info",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 async def geninfo(interaction: discord.Interaction):
     free_stock_amount = len(get_stock())
@@ -512,7 +575,7 @@ async def geninfo(interaction: discord.Interaction):
 @client.tree.command(
     name="clearstock",
     description="Clear all items from stock",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(stock_type="Choose which stock to clear")
 @app_commands.choices(stock_type=[
@@ -553,8 +616,7 @@ async def clearstock(
 @client.tree.command(
     name="restockfile",
     description="Add stock items from a .txt file",
-    guild=discord.Object(id=GUILD_ID)
-)
+    
 @app_commands.describe(
     stock_type="Choose which stock to add to",
     file="Upload a .txt file with one item per line"
@@ -653,7 +715,7 @@ async def restockfile(
 @client.tree.command(
     name="setcooldown",
     description="Change the free or premium cooldown in seconds",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(
     stock_type="Choose which cooldown to change",
@@ -706,7 +768,7 @@ async def setcooldown(
 @client.tree.command(
     name="help",
     description="Show all bot commands",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 async def help_command(interaction: discord.Interaction):
     embed = create_embed(
@@ -771,7 +833,7 @@ async def help_command(interaction: discord.Interaction):
 @client.tree.command(
     name="setstatus",
     description="Change the bot status text",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(status_text="The text to show in the bot status")
 async def setstatus(interaction: discord.Interaction, status_text: str):
@@ -800,7 +862,7 @@ async def setstatus(interaction: discord.Interaction, status_text: str):
 @client.tree.command(
     name="blacklist",
     description="Manage the blacklist",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(
     action="What to do",
@@ -973,7 +1035,7 @@ async def blacklist(
 @client.tree.command(
     name="removestock",
     description="Remove items from free or premium stock",
-    guild=discord.Object(id=GUILD_ID)
+   
 )
 @app_commands.describe(
     stock_type="Choose which stock to remove from",
@@ -1058,7 +1120,7 @@ async def removestock(
 @client.tree.command(
     name="resetcooldown",
     description="Reset a user's free or premium cooldown",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(
     user="User to reset cooldown for",
@@ -1101,7 +1163,7 @@ async def resetcooldown(
 @client.tree.command(
     name="clearcooldowns",
     description="Clear all active cooldowns",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 async def clearcooldowns(interaction: discord.Interaction):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
@@ -1127,7 +1189,7 @@ async def clearcooldowns(interaction: discord.Interaction):
 @client.tree.command(
     name="botinfo",
     description="View bot info, stock, cooldowns, and blacklist count",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 async def botinfo(interaction: discord.Interaction):
     free_stock = len(get_stock())
@@ -1155,7 +1217,7 @@ async def botinfo(interaction: discord.Interaction):
 @client.tree.command(
     name="removeduplicates",
     description="Remove duplicate items from free or premium stock",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(stock_type="Choose which stock to clean")
 @app_commands.choices(stock_type=[
@@ -1209,7 +1271,7 @@ async def removeduplicates(
 @client.tree.command(
     name="checkuser",
     description="Check a user's premium, blacklist, and cooldown status",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(user="User to check")
 async def checkuser(interaction: discord.Interaction, user: discord.Member):
@@ -1248,7 +1310,7 @@ async def checkuser(interaction: discord.Interaction, user: discord.Member):
 @client.tree.command(
     name="embedsettings",
     description="Manage embed settings",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(
     color="Hex color like #ff69b4",
@@ -1351,7 +1413,7 @@ async def embedsettings(
 @client.tree.command(
     name="removeitem",
     description="Remove one exact item from free or premium stock",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 @app_commands.describe(
     stock_type="Choose which stock to remove from",
@@ -1554,7 +1616,7 @@ class AdminDashboardView(discord.ui.View):
 @client.tree.command(
     name="admindashboard",
     description="Open the admin dashboard",
-    guild=discord.Object(id=GUILD_ID)
+    
 )
 async def admindashboard(interaction: discord.Interaction):
     if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
@@ -1569,5 +1631,67 @@ async def admindashboard(interaction: discord.Interaction):
     view = AdminDashboardView()
     embed = view.build_dashboard_embed()
     await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
+
+@client.tree.command(
+    name="setup",
+    description="Set up the bot for this server"
+)
+@app_commands.describe(
+    admin_role="Role that can manage the bot",
+    premium_role="Role that can use premium stock",
+    log_channel="Channel for bot logs",
+    gen_channel="Channel where /gen should be used"
+)
+async def setup(
+    interaction: discord.Interaction,
+    admin_role: discord.Role,
+    premium_role: discord.Role,
+    log_channel: discord.TextChannel,
+    gen_channel: discord.TextChannel
+):
+    if not interaction.guild or not isinstance(interaction.user, discord.Member):
+        embed = create_embed(
+            "Server Only",
+            "This command can only be used in a server.",
+            "warning"
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    if interaction.user.id != OWNER_ID and not interaction.user.guild_permissions.administrator:
+        embed = create_embed(
+            "Access Denied",
+            "You must be a server administrator to use this command.",
+            "error"
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    update_guild_config(
+        interaction.guild.id,
+        admin_role_ids=[admin_role.id],
+        premium_role_ids=[premium_role.id],
+        log_channel_id=log_channel.id,
+        gen_channel_id=gen_channel.id
+    )
+
+    embed = create_embed(
+        "Setup Complete",
+        f"Saved configuration for **{interaction.guild.name}**.",
+        "settings"
+    )
+    embed.add_field(name="🛠 Admin Role", value=admin_role.mention, inline=False)
+    embed.add_field(name="💎 Premium Role", value=premium_role.mention, inline=False)
+    embed.add_field(name="📝 Log Channel", value=log_channel.mention, inline=False)
+    embed.add_field(name="🎮 Gen Channel", value=gen_channel.mention, inline=False)
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+    await send_log(
+        interaction.guild,
+        "Server Setup Updated",
+        f"Configured by {interaction.user.mention}",
+        "settings"
+    )
 
 client.run(TOKEN)
