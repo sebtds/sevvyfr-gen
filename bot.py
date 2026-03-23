@@ -13,10 +13,9 @@ if not TOKEN:
 DATA_DIR = "/data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
-GUILD_ID = 
+
 OWNER_ID = 742144460552536106
-ADMIN_ROLE_ID = 
-PREMIUM_ROLE_ID = 
+
 
 BLACKLIST_FILE = f"{DATA_DIR}/blacklist.txt"
 STOCK_FILE = f"{DATA_DIR}/stock.txt"
