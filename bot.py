@@ -316,7 +316,6 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         )
         await interaction.followup.send(embed=embed)
 
-
 @client.tree.command(
     name="restock",
     description="Add items to free or premium stock",
@@ -355,36 +354,38 @@ async def restock(
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
 
-   if stock_type.value == "free":
-    current_stock = get_stock()
-    cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
-    current_stock.extend(cleaned_items)
-    save_stock(current_stock)
+    if stock_type.value == "free":
+        current_stock = get_stock()
+        cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
+        current_stock.extend(cleaned_items)
+        save_stock(current_stock)
 
-    embed = create_embed(
-        "Free Stock Restocked",
-        f"Added **{len(cleaned_items)}** item(s) to FREE stock.",
-        "stock"
-    )
-    embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
-    embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
-    embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
-       
+        embed = create_embed(
+            "Free Stock Restocked",
+            f"Added **{len(cleaned_items)}** item(s) to FREE stock.",
+            "stock"
+        )
+        embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
+        embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
+        embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
+
     else:
-        if stock_type.value == "premium":
-    current_stock = get_stock()
-    cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
-    current_stock.extend(cleaned_items)
-    save_stock(current_stock)
+        current_stock = get_premium_stock()
+        cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
+        current_stock.extend(cleaned_items)
+        save_premium_stock(current_stock)
 
-    embed = create_embed(
-        "premium Stock Restocked",
-        f"Added **{len(cleaned_items)}** item(s) to premium stock.",
-        "stock"
-    )
-    embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
-    embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
-    embed.add_field(name="📦 Total premium Stock", value=str(len(current_stock)), inline=False)
+        embed = create_embed(
+            "Premium Stock Restocked",
+            f"Added **{len(cleaned_items)}** item(s) to PREMIUM stock.",
+            "premium"
+        )
+        embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
+        embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
+        embed.add_field(name="💎 Total Premium Stock", value=str(len(current_stock)), inline=False)
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
 
 
 @client.tree.command(
@@ -613,25 +614,32 @@ async def restockfile(
 
     if stock_type.value == "free":
         current_stock = get_stock()
-        current_stock.extend(new_items)
+        cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
+        current_stock.extend(cleaned_items)
         save_stock(current_stock)
 
         embed = create_embed(
             "Free Stock Restocked",
-            f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
+            f"Added **{len(cleaned_items)}** item(s) from `{file.filename}`.",
             "stock"
         )
+        embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
+        embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
         embed.add_field(name="📦 Total Free Stock", value=str(len(current_stock)), inline=False)
+
     else:
         current_stock = get_premium_stock()
-        current_stock.extend(new_items)
+        cleaned_items, skipped_duplicates = clean_new_items(current_stock, new_items)
+        current_stock.extend(cleaned_items)
         save_premium_stock(current_stock)
 
         embed = create_embed(
             "Premium Stock Restocked",
-            f"Added **{len(new_items)}** item(s) from `{file.filename}`.",
+            f"Added **{len(cleaned_items)}** item(s) from `{file.filename}`.",
             "premium"
         )
+        embed.add_field(name="📥 Added", value=str(len(cleaned_items)), inline=True)
+        embed.add_field(name="♻️ Skipped Duplicates", value=str(skipped_duplicates), inline=True)
         embed.add_field(name="💎 Total Premium Stock", value=str(len(current_stock)), inline=False)
 
     await interaction.response.send_message(embed=embed, ephemeral=False)
