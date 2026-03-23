@@ -7,16 +7,21 @@ import discord
 from discord import app_commands
 
 TOKEN = os.getenv("TOKEN")
+if not TOKEN:
+    raise ValueError("TOKEN environment variable is missing.")
+
+DATA_DIR = "/data"
+os.makedirs(DATA_DIR, exist_ok=True)
 
 GUILD_ID = 1478979867088523425
 OWNER_ID = 742144460552536106
 ADMIN_ROLE_ID = 1478983511380725850
 PREMIUM_ROLE_ID = 1481062565810536631
-PREMIUM_STOCK_FILE = "premium_stock.txt"
 
-BLACKLIST_FILE = "blacklist.txt"
-STOCK_FILE = "stock.txt"
-EMBED_SETTINGS_FILE = "embed_settings.json"
+BLACKLIST_FILE = f"{DATA_DIR}/blacklist.txt"
+STOCK_FILE = f"{DATA_DIR}/stock.txt"
+PREMIUM_STOCK_FILE = f"{DATA_DIR}/premium_stock.txt"
+EMBED_SETTINGS_FILE = f"{DATA_DIR}/embed_settings.json"
 FREE_COOLDOWN_SECONDS = 300
 PREMIUM_COOLDOWN_SECONDS = 120
 
