@@ -1918,5 +1918,23 @@ async def addpremiumrole(interaction: discord.Interaction, role: discord.Role):
     )
     await interaction.response.send_message(embed=embed, ephemeral=False)
 
+@client.tree.command(
+    name="admindashboard",
+    description="Open the admin dashboard"
+)
+async def admindashboard(interaction: discord.Interaction):
+    if not isinstance(interaction.user, discord.Member) or not has_permission(interaction.user):
+        embed = create_embed(
+            "Access Denied",
+            "You are not allowed to use this command.",
+            "error"
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    view = AdminDashboardView()
+    embed = view.build_dashboard_embed()
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
+
 
 client.run(TOKEN)
