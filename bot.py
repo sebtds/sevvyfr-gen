@@ -340,6 +340,7 @@ async def on_guild_join(guild: discord.Guild):
 async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     await interaction.response.defer(ephemeral=False)
 
+    # blacklist check
     if interaction.user.id in blacklisted_users:
         embed = create_embed(
             "Access Denied",
@@ -349,12 +350,13 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         await interaction.followup.send(embed=embed)
         return
 
+    # channel lock check
     if interaction.guild:
         gen_channel_id = get_gen_channel_id(interaction.guild.id)
         if gen_channel_id and interaction.channel_id != gen_channel_id:
             embed = create_embed(
                 "Wrong Channel",
-                f"You can only use this command in <#{gen_channel_id}>.",
+                f"Use this command in <#{gen_channel_id}>.",
                 "warning"
             )
             await interaction.followup.send(embed=embed)
@@ -367,17 +369,19 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     cooldown_time = FREE_COOLDOWN_SECONDS if stock_type == "free" else PREMIUM_COOLDOWN_SECONDS
 
+    # cooldown check
     if key in cooldowns:
         remaining = int(cooldown_time - (now - cooldowns[key]))
         if remaining > 0:
             embed = create_embed(
                 "Cooldown Active",
-                f"You're on {stock_type} cooldown. Try again in {format_time(remaining)}.",
+                f"Try again in {format_time(remaining)}.",
                 "cooldown"
             )
             await interaction.followup.send(embed=embed)
             return
 
+    # get stock
     if stock_type == "free":
         stock = get_stock()
 
@@ -397,7 +401,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         if not isinstance(interaction.user, discord.Member) or not has_premium(interaction.user):
             embed = create_embed(
                 "Access Denied",
-                "You need a configured Premium role to use this.",
+                "You need premium access.",
                 "premium"
             )
             await interaction.followup.send(embed=embed)
@@ -417,11 +421,22 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         item = stock.pop(0)
         save_premium_stock(stock)
 
+    # send DM
     try:
-    f"Your generated R6 account:\n`{item}`\n\n"
-    f"🔎 Check the skins on this account:\n"
-    f"https://www.siegeskins.dev"
-)
+        dm_embed = create_embed(
+            "Your Generated Account",
+            f"`{item}`",
+            "gen"
+        )
+
+        dm_embed.add_field(
+            name="🔎 Check Skins",
+            value="[Click here](https://www.siegeskins.dev)",
+            inline=False
+        )
+
+        await interaction.user.send(embed=dm_embed)
+
         cooldowns[key] = now
 
         free_stock = len(get_stock())
@@ -432,14 +447,16 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
             f"Check your DMs for your {stock_type} account.",
             "gen"
         )
+
         embed.set_thumbnail(url=interaction.user.display_avatar.url)
         embed.add_field(name="🎟 Type", value=stock_type.title(), inline=True)
         embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
         embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
-        embed.add_field(name="👤 Requested By", value=interaction.user.mention, inline=False)
+        embed.add_field(name="👤 User", value=interaction.user.mention, inline=False)
 
         await interaction.followup.send(embed=embed)
 
+        # log
         if interaction.guild:
             await send_log(
                 interaction.guild,
@@ -451,7 +468,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
     except discord.Forbidden:
         embed = create_embed(
             "DM Failed",
-            "I couldn't DM you. Turn on DMs and try again.",
+            "Turn on DMs and try again.",
             "error"
         )
         await interaction.followup.send(embed=embed)
