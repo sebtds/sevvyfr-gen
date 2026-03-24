@@ -423,55 +423,47 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
     # send DM
     try:
-        dm_embed = create_embed(
-            "Your Generated Account",
-            f"`{item}`",
-            "gen"
-        )
+    await interaction.user.send(
+        f"Your generated R6 account:\n"
+        f"{item}\n\n"
+        f"Check the skins on the account:\n"
+        f"www.siegeskins.dev"
+    )
 
-        dm_embed.add_field(
-            name="🔎 Check Skins",
-            value="(https://siegeskins.dev/add)",
-            inline=False
-        )
+    cooldowns[key] = now
 
-        await interaction.user.send(embed=dm_embed)
+    free_stock = len(get_stock())
+    premium_stock = len(get_premium_stock())
 
-        cooldowns[key] = now
+    embed = create_embed(
+        "Account Generated",
+        f"Check your DMs for your {stock_type} account.",
+        "gen"
+    )
 
-        free_stock = len(get_stock())
-        premium_stock = len(get_premium_stock())
+    embed.set_thumbnail(url=interaction.user.display_avatar.url)
+    embed.add_field(name="🎟 Type", value=stock_type.title(), inline=True)
+    embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
+    embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
+    embed.add_field(name="👤 User", value=interaction.user.mention, inline=False)
 
-        embed = create_embed(
+    await interaction.followup.send(embed=embed)
+
+    if interaction.guild:
+        await send_log(
+            interaction.guild,
             "Account Generated",
-            f"Check your DMs for your {stock_type} account.",
+            f"{interaction.user.mention} generated a **{stock_type}** account.",
             "gen"
         )
 
-        embed.set_thumbnail(url=interaction.user.display_avatar.url)
-        embed.add_field(name="🎟 Type", value=stock_type.title(), inline=True)
-        embed.add_field(name="📦 Free Stock", value=str(free_stock), inline=True)
-        embed.add_field(name="💎 Premium Stock", value=str(premium_stock), inline=True)
-        embed.add_field(name="👤 User", value=interaction.user.mention, inline=False)
-
-        await interaction.followup.send(embed=embed)
-
-        # log
-        if interaction.guild:
-            await send_log(
-                interaction.guild,
-                "Account Generated",
-                f"{interaction.user.mention} generated a **{stock_type}** account.",
-                "gen"
-            )
-
-    except discord.Forbidden:
-        embed = create_embed(
-            "DM Failed",
-            "Turn on DMs and try again.",
-            "error"
-        )
-        await interaction.followup.send(embed=embed)
+except discord.Forbidden:
+    embed = create_embed(
+        "DM Failed",
+        "Turn on DMs and try again.",
+        "error"
+    )
+    await interaction.followup.send(embed=embed)
 
 
 @client.tree.command(
