@@ -418,7 +418,10 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
         save_premium_stock(stock)
 
     try:
-        await interaction.user.send(f"Your generated R6 account:\n`{item}`")
+    f"Your generated R6 account:\n`{item}`\n\n"
+    f"🔎 Check the skins on this account:\n"
+    f"https://www.siegeskins.dev"
+)
         cooldowns[key] = now
 
         free_stock = len(get_stock())
@@ -1936,5 +1939,13 @@ async def admindashboard(interaction: discord.Interaction):
     embed = view.build_dashboard_embed()
     await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
 
+
+@client.tree.command(name="exportstock", description="Download stock as file")
+async def exportstock(interaction: discord.Interaction):
+    if not has_permission(interaction.user):
+        return
+
+    file = discord.File(STOCK_FILE, filename="stock.txt")
+    await interaction.response.send_message(file=file)
 
 client.run(TOKEN)
