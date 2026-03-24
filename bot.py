@@ -431,7 +431,7 @@ async def gen(interaction: discord.Interaction, type: app_commands.Choice[str]):
 
         dm_embed.add_field(
             name="🔎 Check Skins",
-            value="[Click here](https://www.siegeskins.dev)",
+            value="(https://siegeskins.dev)",
             inline=False
         )
 
